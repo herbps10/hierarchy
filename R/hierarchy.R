@@ -61,8 +61,23 @@ hierarchy_factory = setRefClass(Class = "hierarchy",
       }
       nc = ncol(ml_idxs)
       colnames(ml_idxs) = paste("level", 1:nc, sep="-")
-      rownames(ml_idxs) = NULL
+      rownames(ml_idxs) = NULL 
       return(ml_idxs[,1:nc])
+    },
+    get_vectorized_hierarchy = function(timepoint = NULL) {
+      idxs = get_hierarchy_idxs(timepoint)
+      idxs_l = apply(idxs, 1, list)
+      idxs_l = lapply(idxs_l, unlist)
+      idxs_l = lapply(idxs_l, function(x) x[x != 1])
+      lengths = sapply(idxs_l, length, USE.NAMES = FALSE)
+      N = length(lengths)
+      starts = c(1, cumsum(lengths)[1:(N-1)])
+      stops = (starts + lengths - 1)
+      return(list(
+        idx = unlist(idxs_l),
+	start = starts,
+	end = stops
+      ))
     }
   )
 )
