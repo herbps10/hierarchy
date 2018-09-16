@@ -4,10 +4,12 @@
 \alias{load_csv}
 \title{Load a .csv file in a round-trip-friendly way}
 \usage{
-load_csv(file)
+load_csv(file, .table_name = NULL)
 }
 \arguments{
-\item{file}{path to .csv file.}
+\item{file}{path to .csv file with read access.}
+
+\item{table_name}{}
 }
 \value{
 tibble of file contents.

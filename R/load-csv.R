@@ -7,10 +7,11 @@
 #' @export
 load_csv = function(file, .table_name = NULL) {
   if (is.null(.table_name))
-    checkmate::assertFileExists(file, "r", ".csv")
+    checkmate::assertFileExists(file, "r", "csv")
   else
-    checkmate::assertFileExists(file, "r", ".csv", .table_name)
-  table = read.csv(stringsAsFactors=FALSE, colClasses = "character")
+    checkmate::assertFileExists(file, "r", "csv", .table_name)
+  file = normalizePath(file)
+  table = read.csv(file, stringsAsFactors=FALSE, colClasses = "character")
   return(table)
 }
 

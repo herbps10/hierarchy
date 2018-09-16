@@ -3,14 +3,14 @@ Type: Package
 Title: Package for handling inputs to hierarchical models.
 Version: 0.0.1
 Date: 2018-08-30
-Authors@R: c(person("Krzysztof", "Sakrejda", email = "sakrejda@umass.edu", role = c("cre", "aut")),
+Authors@R: person("Krzysztof", "Sakrejda", email = "sakrejda@umass.edu", role = c("cre", "aut"))
 Description: A user-facing package for handling hierarchical models.
-BugReports: https://github.com/FPCounts/hierarchy/issues
+BugReports: https://github.com/sakrejda/hierarchy/issues
 License: GPL-3
 Imports:
     magrittr,
     dplyr
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 Suggests: 
     testthat
