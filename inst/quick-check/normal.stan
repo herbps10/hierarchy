@@ -4,7 +4,7 @@ data {
 
   vector[N] y;
 
-  int NNZE;
+  int N_NZE;
   int NZE[NNZE];
   int starts[N];
   int stops[N];

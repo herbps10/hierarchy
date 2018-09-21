@@ -22,5 +22,5 @@ mml = flat_mm(f, data)
 
 library(rstan)
 
-m = stan(file = './normal.stan', data = c(mml, y = data[['y']])) 
+m = stan(file = './normal.stan', data = c(mml, list(y = data[['y']]))) 
 
