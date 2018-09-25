@@ -1,4 +1,3 @@
-
 #' Create a sparse list model matrix 
 #'
 #' @param formula formula to use
@@ -6,7 +5,9 @@
 #' @return list with Stan-friendly components
 #' @export
 flat_mm = function(formula = 1, data = NULL, ...) { 
-  mm = Matrix::sparse.model.matrix(f, data, ...)
+  mm = MatrixModels::model.Matrix(f, data, sparse = TRUE, ...)
+
+  ## Calculate matrix entries
   nze = apply(mm, 1, function(x) which(x != 0))
   N = length(nze)
   stops = sapply(nze, length) %>% cumsum
@@ -21,13 +22,28 @@ flat_mm = function(formula = 1, data = NULL, ...) {
     starts = starts, stops = stops,
     X_vec = unlist(X_vec)
   )
+
+  ## Get response variable:
   t = terms(formula)
   pos = attr(t, 'response')
   dn = all.vars(t)[pos]
   mml[[dn]] = data[[dn]]
+
+  ## Get predictor variables:
+  G  = attr(t, 'factors')
+  groupings = colnames(G)[mm@assign]
+  if (attr(t, 'intercept') != 0)
+    groupings = c('(Intercept)', groupings)
+  group = list()
+  involves = list()
+  for (g in unique(groupings)) {
+    group[[g]] = which(groupings == g) 
+    involves[[g]] = rownames(G)[which(G[,colnames(G) == g] == 1)]
+  }
+  mml[['groups']] = group
+  mml[['involves']] = involves
   return(mml)
 }
-
 
 
 

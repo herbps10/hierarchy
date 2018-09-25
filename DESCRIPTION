@@ -9,7 +9,9 @@ BugReports: https://github.com/sakrejda/hierarchy/issues
 License: GPL-3
 Imports:
     magrittr,
-    dplyr
+    dplyr,
+    Matrix,
+    MatrixModels
 VignetteBuilder: knitr
 RoxygenNote: 6.1.0
 Suggests: 
