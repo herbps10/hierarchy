@@ -18,12 +18,16 @@ parameters {
 }
 
 model { 
+  vector[N] mu;
+
+  alphas ~ normal(0, 1);
   betas ~ normal(0, 1);
   sigma ~ normal(0, 1);
 
-  for (i in 1:N) {
-    y ~ normal(sum(X_vec[starts[i]:stops[i]] .* betas[NZE[starts[i]:stops[i]]]), sigma);
-  }
+  for (i in 1:N)
+    mu[i] = sum(X_vec[starts[i]:stops[i]] .* betas[NZE[starts[i]:stops[i]]]);
+    
+  y ~ normal(mu, sigma);
 }
 
 

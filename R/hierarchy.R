@@ -7,7 +7,7 @@
 #' @field .levels names of the (child) levels in the hierarchy
 #' @field .table table representing the hierarchy
 #' @export
-hierarchy_factory = setRefClass(Class = "hierarchy",
+hierarchy_factory = methods::setRefClass(Class = "hierarchy",
   fields = list(
     .levels = "character",
     .table = "data.frame"
@@ -15,7 +15,7 @@ hierarchy_factory = setRefClass(Class = "hierarchy",
   methods = list(
     initialize = function(files, ...) {
       "Construct hierarchy from given relationship files."
-      callSuper(...)
+      methods::callSuper(...)
       sh = spatial_hierarchy(files)
       .self$.table = sh
       .self$.levels = region_names(sh)

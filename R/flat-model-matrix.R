@@ -1,5 +1,10 @@
 
-
+#' Create a sparse list model matrix 
+#'
+#' @param formula formula to use
+#' @param data where to look up terms
+#' @return list with Stan-friendly components
+#' @export
 flat_mm = function(formula = 1, data = NULL, ...) { 
   mm = Matrix::sparse.model.matrix(f, data, ...)
   nze = apply(mm, 1, function(x) which(x != 0))
