@@ -1,0 +1,22 @@
+region_code,admin_level,start_date,end_date,region_name
+905,region,NA,NA,Northern America
+906,region,NA,NA,Eastern Asia
+910,region,NA,NA,Eastern Africa
+911,region,NA,NA,Middle Africa
+912,region,NA,NA,Northern Africa
+913,region,NA,NA,Southern Africa
+914,region,NA,NA,Western Africa
+915,region,NA,NA,Caribbean
+916,region,NA,NA,Central America
+920,region,NA,NA,South-Eastern Asia
+921,region,NA,NA,South-Central Asia
+922,region,NA,NA,Western Asia
+923,region,NA,NA,Eastern Europe
+924,region,NA,NA,Northern Europe
+925,region,NA,NA,Southern Europe
+926,region,NA,NA,Western Europe
+927,region,NA,NA,Australia/New Zealand
+928,region,NA,NA,Melanesia
+931,region,NA,NA,South America
+954,region,NA,NA,Micronesia
+957,region,NA,NA,Polynesia

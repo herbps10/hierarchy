@@ -1,38 +1,44 @@
 #' Load relationship file
 #'
+#' The relationship file lists each region code, level, 
+#' its parent region code, and the parent region level
+#' along with the date when the region enters existence
+#' and when the region ceases existence.  This is a way
+#' of representing a hierarchy of groups that does not 
+#' require all parts of the hierarchy to have the same
+#' number of levels.
+#'
+#' When the talbe is loaded we create a unique id that is
+#' the combination of the parent_region_code and the parent_region_level
+#' so that the region_code field is not required to be unique.
+#'
 #' @param file path to .csv file describing a spatial relationship
 #' @return table describing the spatial relationship
 #' @export
 load_spatial_relationship = function(file) {
-  table = load_csv(file, "spatial_relationship_file")
-  name_check = colnames(table) == c("region_code", "region_level", 
+  expected_columns = c("region_code", "region_level", 
     "parent_region_code", "parent_region_level",
     "start_date", "end_date")
-  if (!all(name_check))
-    stop("Spatial table does not contain correct column names.")
+  table = load_csv(file, "spatial_relationship_file")
+  checkmate::assertDataFrame(table, col.names = "named", 
+    ncol = length(expected_columns))
+  checkmate::assertNames(names(table), must.include = expected_columns)
+
   table[['start_date']] = lubridate::ymd(table[['start_date']])
   table[['end_date']] = lubridate::ymd(table[['end_date']])
   table[['id']] = paste(table[['region_code']], table[['region_level']])
   table[['parent_id']] = paste(table[['parent_region_code']], table[['parent_region_level']]) 
-  ## FIXME: add schema checks here.
   return(table) 
 }
 
-#' Make h_table zero row.
-#' 
-#' @return an 'h_table' zero_Row
-zero_row = function() {
-  zero_row = data.frame(
-    region_code = "ZERO", region_level = "ZERO_LEVEL",
-    parent_region_code = "ZERO", parent_region_level = "ZERO_LEVEL",
-    start_date = NA, end_date = NA,
-    id = "ZERO ZERO_LEVEL", parent_id = "ZERO ZERO_LEVEL",
-    stringsAsFactors = FALSE
-  )
-  return(zero_row)
-}
-
-#' Make h_table no-parent rows
+#' Make h_table no-parent rows 
+#'
+#' The no-parent rows are the parents of all regions that
+#' themselves have no parent regions.  These are identified
+#' as the rows who's parent_region_id does not appear in the 
+#' 'id' column.  They are added so that all parts of the hierarchy
+#' terminate at a well-defined "parent_region_level" regardless of the
+#' depth of the hierarchy.
 #'
 #' @param table h_table to check for no-parent codes.
 #' @return data frame rows for all no-parent rows (with ZERO as parent).
@@ -41,14 +47,52 @@ np_rows = function(table) {
   np_rows = data.frame(
     region_code = table[['parent_region_code']][np_idxs], 
     region_level = table[['parent_region_level']][np_idxs],
-    parent_region_code = "ZERO", 
-    parent_region_level = "ZERO_LEVEL",
-    start_date = NA, end_date = NA,
-    id = paste(table[['parent_region_code']][np_idxs], table[['parent_region_level']][np_idxs]),
-    parent_id = "ZERO ZERO_LEVEL",
+    parent_region_code = zero_region_code(), 
+    parent_region_level = zero_region_level(),
+    start_date = zero_start_date(), 
+    end_date = zero_end_date(),
+    id = zero_id(),
+    parent_id = zero_parent_id(),
     stringsAsFactors = FALSE)
   np_rows = unique(np_rows)
   return(np_rows)
+}
+
+#' Avoid hardcoding strings everywhere.
+#'
+#' @export zero_region_code
+#' @export zero_region_level
+#' @export zero_start_date
+#' @export zero_end_date
+#' @export zero_id
+#' @export zero_parent_id
+zero_region_code = function() "ZERO"
+zero_region_level = function() "ZERO_LEVEL"
+zero_start_date = function() NA
+zero_end_date = function() NA
+zero_id = function() paste(zero_region_code(), zero_region_level())
+zero_parent_id = function() paste(zero_region_code(), zero_region_level())
+
+#' Make h_table zero row.
+#'
+#' This row is the parent of the parents of rows with no parents.
+#' It exists so that all rows have parents, even the rows that are
+#' constructed to be the parents of rows with no parents...
+#' 
+#' @return an 'h_table' zero_Row
+zero_row = function() {
+  zero_row = data.frame(
+    region_code = zero_region_code(), 
+    region_level = zero_region_level(),
+    parent_region_code = zero_region_code(), 
+    parent_region_level = zero_region_level(),
+    start_date = zero_start_date(), 
+    end_date = zero_end_date(),
+    id = zero_id(), 
+    parent_id = zero_parent_id(),
+    stringsAsFactors = FALSE
+  )
+  return(zero_row)
 }
 
 #' Return the index of the zero-value entry in the parameter index

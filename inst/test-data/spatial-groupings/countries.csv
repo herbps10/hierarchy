@@ -1,0 +1,196 @@
+region_code,admin_level,start_date,end_date,region_name
+4,country,NA,NA,Afghanistan
+8,country,NA,NA,Albania
+12,country,NA,NA,Algeria
+24,country,NA,NA,Angola
+28,country,NA,NA,Antigua and Barbuda
+31,country,NA,NA,Azerbaijan
+32,country,NA,NA,Argentina
+36,country,NA,NA,Australia
+40,country,NA,NA,Austria
+44,country,NA,NA,Bahamas
+48,country,NA,NA,Bahrain
+50,country,NA,NA,Bangladesh
+51,country,NA,NA,Armenia
+52,country,NA,NA,Barbados
+56,country,NA,NA,Belgium
+64,country,NA,NA,Bhutan
+68,country,NA,NA,Bolivia
+70,country,NA,NA,Bosnia and Herzegovina
+72,country,NA,NA,Botswana
+76,country,NA,NA,Brazil
+84,country,NA,NA,Belize
+90,country,NA,NA,Solomon Islands
+100,country,NA,NA,Bulgaria
+104,country,NA,NA,Myanmar
+108,country,NA,NA,Burundi
+112,country,NA,NA,Belarus
+116,country,NA,NA,Cambodia
+120,country,NA,NA,Cameroon
+124,country,NA,NA,Canada
+132,country,NA,NA,Cabo Verde
+140,country,NA,NA,Central African Republic
+144,country,NA,NA,Sri Lanka
+148,country,NA,NA,Chad
+152,country,NA,NA,Chile
+156,country,NA,NA,China
+170,country,NA,NA,Colombia
+174,country,NA,NA,Comoros
+178,country,NA,NA,Congo
+180,country,NA,NA,Democratic Republic of the Congo
+184,country,NA,NA,Cook Islands
+188,country,NA,NA,Costa Rica
+191,country,NA,NA,Croatia
+192,country,NA,NA,Cuba
+203,country,NA,NA,Czech Republic
+204,country,NA,NA,Benin
+208,country,NA,NA,Denmark
+212,country,NA,NA,Dominica
+214,country,NA,NA,Dominican Republic
+218,country,NA,NA,Ecuador
+222,country,NA,NA,El Salvador
+226,country,NA,NA,Equatorial Guinea
+231,country,NA,NA,Ethiopia
+232,country,NA,NA,Eritrea
+233,country,NA,NA,Estonia
+242,country,NA,NA,Fiji
+246,country,NA,NA,Finland
+250,country,NA,NA,France
+262,country,NA,NA,Djibouti
+266,country,NA,NA,Gabon
+268,country,NA,NA,Georgia
+270,country,NA,NA,Gambia
+275,country,NA,NA,State of Palestine
+276,country,NA,NA,Germany
+288,country,NA,NA,Ghana
+296,country,NA,NA,Kiribati
+300,country,NA,NA,Greece
+308,country,NA,NA,Grenada
+312,country,NA,NA,Guadeloupe
+316,country,NA,NA,Guam
+320,country,NA,NA,Guatemala
+324,country,NA,NA,Guinea
+328,country,NA,NA,Guyana
+332,country,NA,NA,Haiti
+340,country,NA,NA,Honduras
+344,country,NA,NA,"China, Hong Kong SAR"
+348,country,NA,NA,Hungary
+356,country,NA,NA,India
+360,country,NA,NA,Indonesia
+364,country,NA,NA,Iran (Islamic Republic of)
+368,country,NA,NA,Iraq
+372,country,NA,NA,Ireland
+376,country,NA,NA,Israel
+380,country,NA,NA,Italy
+384,country,NA,NA,Cote dIvoire
+388,country,NA,NA,Jamaica
+392,country,NA,NA,Japan
+398,country,NA,NA,Kazakhstan
+400,country,NA,NA,Jordan
+404,country,NA,NA,Kenya
+408,country,NA,NA,Democratic People's Republic of Korea
+410,country,NA,NA,Republic of Korea
+414,country,NA,NA,Kuwait
+417,country,NA,NA,Kyrgyzstan
+418,country,NA,NA,Lao People's Democratic Republic
+422,country,NA,NA,Lebanon
+426,country,NA,NA,Lesotho
+428,country,NA,NA,Latvia
+430,country,NA,NA,Liberia
+434,country,NA,NA,Libya
+440,country,NA,NA,Lithuania
+450,country,NA,NA,Madagascar
+454,country,NA,NA,Malawi
+458,country,NA,NA,Malaysia
+462,country,NA,NA,Maldives
+466,country,NA,NA,Mali
+470,country,NA,NA,Malta
+474,country,NA,NA,Martinique
+478,country,NA,NA,Mauritania
+480,country,NA,NA,Mauritius
+484,country,NA,NA,Mexico
+496,country,NA,NA,Mongolia
+498,country,NA,NA,Republic of Moldova
+499,country,NA,NA,Montenegro
+500,country,NA,NA,Montserrat
+504,country,NA,NA,Morocco
+508,country,NA,NA,Mozambique
+512,country,NA,NA,Oman
+516,country,NA,NA,Namibia
+520,country,NA,NA,Nauru
+524,country,NA,NA,Nepal
+528,country,NA,NA,Netherlands
+548,country,NA,NA,Vanuatu
+554,country,NA,NA,New Zealand
+558,country,NA,NA,Nicaragua
+562,country,NA,NA,Niger
+566,country,NA,NA,Nigeria
+578,country,NA,NA,Norway
+580,country,NA,NA,Northern Mariana Islands
+584,country,NA,NA,Marshall Islands
+585,country,NA,NA,Palau
+586,country,NA,NA,Pakistan
+591,country,NA,NA,Panama
+598,country,NA,NA,Papua New Guinea
+600,country,NA,NA,Paraguay
+604,country,NA,NA,Peru
+608,country,NA,NA,Philippines
+616,country,NA,NA,Poland
+620,country,NA,NA,Portugal
+624,country,NA,NA,Guinea-Bissau
+626,country,NA,NA,Timor-Leste
+630,country,NA,NA,Puerto Rico
+634,country,NA,NA,Qatar
+638,country,NA,NA,R<e9>union
+642,country,NA,NA,Romania
+643,country,NA,NA,Russian Federation
+646,country,NA,NA,Rwanda
+659,country,NA,NA,Saint Kitts and Nevis
+660,country,NA,NA,Anguilla
+662,country,NA,NA,Saint Lucia
+670,country,NA,NA,Saint Vincent and the Grenadines
+678,country,NA,NA,Sao Tome and Principe
+682,country,NA,NA,Saudi Arabia
+686,country,NA,NA,Senegal
+688,country,NA,NA,Serbia
+694,country,NA,NA,Sierra Leone
+702,country,NA,NA,Singapore
+703,country,NA,NA,Slovakia
+704,country,NA,NA,Viet Nam
+705,country,NA,NA,Slovenia
+706,country,NA,NA,Somalia
+710,country,NA,NA,South Africa
+716,country,NA,NA,Zimbabwe
+724,country,NA,NA,Spain
+728,country,NA,NA,South Sudan
+729,country,NA,NA,Sudan
+740,country,NA,NA,Suriname
+748,country,NA,NA,Swaziland
+752,country,NA,NA,Sweden
+756,country,NA,NA,Switzerland
+760,country,NA,NA,Syrian Arab Republic
+762,country,NA,NA,Tajikistan
+764,country,NA,NA,Thailand
+768,country,NA,NA,Togo
+776,country,NA,NA,Tonga
+780,country,NA,NA,Trinidad and Tobago
+784,country,NA,NA,United Arab Emirates
+788,country,NA,NA,Tunisia
+792,country,NA,NA,Turkey
+795,country,NA,NA,Turkmenistan
+798,country,NA,NA,Tuvalu
+800,country,NA,NA,Uganda
+804,country,NA,NA,Ukraine
+807,country,NA,NA,The former Yugoslav Republic of Macedonia
+818,country,NA,NA,Egypt
+826,country,NA,NA,United Kingdom
+834,country,NA,NA,United Republic of Tanzania
+840,country,NA,NA,United States of America
+850,country,NA,NA,United States Virgin Islands
+854,country,NA,NA,Burkina Faso
+858,country,NA,NA,Uruguay
+860,country,NA,NA,Uzbekistan
+862,country,NA,NA,Venezuela (Bolivarian Republic of)
+882,country,NA,NA,Samoa
+887,country,NA,NA,Yemen
+894,country,NA,NA,Zambia

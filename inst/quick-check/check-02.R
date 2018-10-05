@@ -6,7 +6,7 @@ lvls = sapply(X = 1:100,
     FUN = function(x) sample(letters, 10, TRUE) %>% paste(collapse = "")
   ) %>% unique
 
-N = 10000
+N = 1000
 
 data = data.frame(
   y = rnorm(N),

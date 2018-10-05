@@ -1,6 +1,9 @@
 library(hierarchy)
 options(error = recover)
-fs = dir("~/packages/fpem-dp-current/spatial-relationships/", pattern = '.csv', full.names=TRUE)
+
+r_path = "test-data/spatial-groupings"
+test_data_path = system.file(r_path, package="hierarchy")
+fs = dir(path = test_data_path, pattern = ".*-in-.*\\.csv", full.names = TRUE)
 sh = hierarchy:::hierarchy_factory(fs)
 sh$get_size()
 c_idx = sh$get_level_idxs("country")

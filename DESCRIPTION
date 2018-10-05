@@ -9,6 +9,7 @@ BugReports: https://github.com/sakrejda/hierarchy/issues
 License: GPL-3
 Imports:
     magrittr,
+    lubridate,
     dplyr,
     Matrix,
     MatrixModels

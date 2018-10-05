@@ -1,4 +1,4 @@
 library(testthat)
-library(fpem)
+library(hierarchy)
 
-test_check("fpem")
+test_check("hierarchy")
