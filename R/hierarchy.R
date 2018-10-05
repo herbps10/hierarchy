@@ -64,7 +64,6 @@ hierarchy_factory = methods::setRefClass(Class = "hierarchy",
       table = get_table(timepoint)
       idxs = get_leaf_idxs(table)
       ml_idxs = idxs
-      all_zero = FALSE
       while (!all(idxs == get_zero_idx())) {
         idxs = get_parent_idxs(idxs)
         ml_idxs = cbind(ml_idxs, idxs)

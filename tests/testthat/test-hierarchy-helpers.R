@@ -34,8 +34,26 @@ test_that("hierarchy can be loaded", {
   h_table = spatial_hierarchy(good_paths)
   zr = hierarchy:::get_zero_idx()
   expect_equal(h_table[['region_code']][zr], "ZERO")
-  expect_equal(h_table[['region_level']][zr], "ZERO LEVEL")
-  expect_true("ZERO LEVEL" %in% h_table[['parent_region_level']])
+  expect_equal(h_table[['region_level']][zr], "ZERO_LEVEL")
+  expect_true("ZERO_LEVEL" %in% h_table[['parent_region_level']])
 })
+
+test_that("indexes are retrieved correctly", {
+  r_path = "test-data/spatial-groupings"
+  test_data_path = system.file(r_path, package="hierarchy")
+  good_paths = dir(path = test_data_path, 
+    pattern = ".*-in-.*\\.csv", full.names = TRUE)
+  h_table = spatial_hierarchy(good_paths)
+  expect_equal(
+    h_table[hierarchy:::get_leaf_idxs(h_table), 'region_level'],
+    rep("country", 233)
+  )
+  expect_equal(
+    hierarchy:::get_id_idx(paste(920, "region"), h_table),
+    250
+  )
+})
+
+
 
 

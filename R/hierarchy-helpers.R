@@ -49,9 +49,9 @@ np_rows = function(table) {
     region_level = table[['parent_region_level']][np_idxs],
     parent_region_code = zero_region_code(), 
     parent_region_level = zero_region_level(),
-    start_date = zero_start_date(), 
-    end_date = zero_end_date(),
-    id = zero_id(),
+    start_date = table[['start_date']][np_idxs],
+    end_date = table[['end_date']][np_idxs],
+    id = table[['parent_id']][np_idxs],
     parent_id = zero_parent_id(),
     stringsAsFactors = FALSE)
   np_rows = unique(np_rows)
@@ -130,10 +130,10 @@ region_names = function(table) {
 
 #' For a code return the index if a code exists or a zero otherwise
 #' 
-#' @param code 
+#' @param id paste(code, level)
 #' @param table h_table object.
-get_id_idx = function(code, table) {
-  idx = which(code == table[['id']])
+get_id_idx = function(id, table) {
+  idx = which(id == table[['id']])
   if (length(idx) == 0)
     idx = get_zero_idx()
   return(idx)
