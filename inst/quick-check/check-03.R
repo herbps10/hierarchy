@@ -1,20 +1,24 @@
 library(hierarchy); library(magrittr)
 options(error = recover)
 
-lvls = sapply(X = 1:100, 
+s_grid = sapply(X = 1:400, 
+    FUN = function(x) sample(0:9, 10, TRUE) %>% paste(collapse = "")
+  ) %>% unique
+
+counties = sapply(X = 1:47, 
     FUN = function(x) sample(letters, 10, TRUE) %>% paste(collapse = "")
   ) %>% unique
 
-N = 1000
+N = 2000
 
 data = data.frame(
   y = rnorm(N),
   x = rnorm(N),
-  grouping_a = sample(lvls, N, TRUE), 
-  grouping_b = sample(lvls, N, TRUE)
+  P_tilde_c = sample(counties, N, TRUE), 
+  P_tilde_s = sample(s_grid, N, TRUE)
 )
 
-f = y ~ x + grouping_a + grouping_b + grouping_a:grouping_b
+f = y ~ x + P_tilde_c + P_tilde_s
 mm = model.matrix(f, data)
 
 mml = flat_mm(f, data)

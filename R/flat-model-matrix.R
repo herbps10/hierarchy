@@ -1,3 +1,48 @@
+#' A class for creating a flat sparse model matrix
+#' representation
+#'
+#' @field .N
+#' @field .P
+#' @field .N_NZE
+#' @field .NZE
+#' @field .starts
+#' @field .stops
+#' @field .X_vec
+#' @field .y
+#' @field .groups
+#' @field .involves
+#' @export fmm_factory
+#' @exportClass fmm
+fmm_factory = methods::setRefClass(Class = "fmm",
+  fields = list(
+    .N = "numeric",
+    .P = "numeric",
+    .N_NZE = "numeric",
+    .NZE = "numeric",
+    .starts = "numeric",
+    .stops = "numeric",
+    .X_vec = "numeric",
+    .y = "numeric",
+    .groups = "list",
+    .involves = "list"
+  ),
+  methods = list(
+    initialize = function(formula, data, ...) {
+      mml = flat_model_matrix(formula, data, ...)
+      .self$.N = mml$N
+      .self$.P = mml$P
+      .self$.N_NZE = mml$N_NZE
+      .self$.NZE = mml$NZE
+      .self$.starts = mml$starts
+      .self$.stops = mml$stops
+      .self$.X_vec = mml$X_vec
+      .self$.y = mml$y
+      .self$.groups = mml$groups
+      .self$.involves = mml$involves
+    }
+  )
+)
+
 #' Create a sparse list model matrix 
 #'
 #' @param formula formula to use
