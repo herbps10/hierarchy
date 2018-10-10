@@ -1,16 +1,16 @@
 #' A class for creating a flat sparse model matrix
 #' representation
 #'
-#' @field .N
-#' @field .P
-#' @field .N_NZE
-#' @field .NZE
-#' @field .starts
-#' @field .stops
-#' @field .X_vec
-#' @field .y
-#' @field .groups
-#' @field .involves
+#' @field .N number of observations in model matrix
+#' @field .P number of columns in the model matrix
+#' @field .N_NZE number of non-zero entries in the model matrix
+#' @field .NZE indexes of non-zero entries in the model matrix (RSC)
+#' @field .starts where each row of the model matrix starts in NZE
+#' @field .stops where each row of the model matrix ends in NZE
+#' @field .X_vec N_NZE NZE entries of the model matrix 
+#' @field .y dependent data vector, if applicable
+#' @field .groups index into X_vec for each group of parameters produced by the formula
+#' @field .involves name of data columns involved in each group
 #' @export fmm_factory
 #' @exportClass fmm
 fmm_factory = methods::setRefClass(Class = "fmm",
@@ -24,11 +24,12 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .X_vec = "numeric",
     .y = "numeric",
     .groups = "list",
-    .involves = "list"
+    .involves = "list",
+    .data = "data.frame"
   ),
   methods = list(
     initialize = function(formula, data, ...) {
-      mml = flat_model_matrix(formula, data, ...)
+      mml = flat_mm(formula = formula, data = data, ...)
       .self$.N = mml$N
       .self$.P = mml$P
       .self$.N_NZE = mml$N_NZE
@@ -39,7 +40,47 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.y = mml$y
       .self$.groups = mml$groups
       .self$.involves = mml$involves
-    }
+      .self$.data = data
+    },
+    expose = function(...) {
+      "Extractor that takes a named vector and provides the relevant
+       component with (optionally) a new name.  The renaming syntax follows
+       dplyr::rename so the new name is taken from the name of the argument and
+       the element to extract is taken from the character vector content.
+
+       For example OBJ$expose(phi_P = 'P') would return the number of (implicit)
+       model matrix columns with the name 'phi_P'.  This is useful to construct
+       lists that are going to be used in, e.g.-Stan."
+      fields = names(methods::getRefClass("fmm")$fields())
+      args_internal = unlist(list(...))
+      args_new = names(args_internal)
+      o = list()
+      for (i in 1:length(args_internal)) {
+        arg = args_internal[i]
+        internal_arg = paste0(".", arg)
+        if (internal_arg %in% fields) {
+          if (length(args_new) != 0 && args_new[i] != "")
+            o[[args_new[i]]] = .self[[internal_arg]]
+          else
+            o[[arg]] = .self[[internal_arg]] 
+        }
+      }
+      return(o)
+    },
+    components = function() {
+      fields = names(methods::getRefClass("fmm")$fields())
+      return(fields)
+    },
+    get_data = function() return(as.list(.self$.data)),
+    N = function() .self$.N,
+    P = function() .self$.P,
+    N_NZE = function() .self$.N_NZE,
+    NZE = function() .self$.NZE,
+    starts = function() .self$.starts,
+    stops = function() .self$.stops,
+    x = function() .self$x,
+    groups = function() .self$.groups,
+    involves = function() .self$.involves
   )
 )
 
@@ -50,7 +91,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
 #' @return list with Stan-friendly components
 #' @export
 flat_mm = function(formula = 1, data = NULL, ...) { 
-  mm = MatrixModels::model.Matrix(f, data, sparse = TRUE, ...)
+  mm = MatrixModels::model.Matrix(object = f, data = data, sparse = TRUE, ...)
 
   ## Calculate matrix entries
   nze = apply(mm, 1, function(x) which(x != 0))
