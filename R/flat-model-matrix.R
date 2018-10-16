@@ -74,13 +74,51 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     get_data = function() return(as.list(.self$.data)),
     N = function() .self$.N,
     P = function() .self$.P,
+    check_component = function(component) {
+      available_components = names(.self$.involves)
+      if (is.null(component)) {
+        return(available_components) 
+      } else {
+        bad = component[!(component %in% available_components)]
+        if (length(bad) != 0) {
+          msg = paste0("Some components are not involved in this ",
+                       "model matrix.  Extraneous components are: \n",
+                       paste("    ", bad, sep = "", collapse = "\n"), 
+                       "\nAvailable components are: \n",
+                       paste("    ", available_components, sep = "", collapse = " \n"))
+          stop(msg)
+        }
+        return(component)
+      }
+    }, 
     N_NZE = function() .self$.N_NZE,
     NZE = function() .self$.NZE,
-    starts = function() .self$.starts,
-    stops = function() .self$.stops,
-    x = function() .self$x,
-    groups = function() .self$.groups,
-    involves = function() .self$.involves
+    starts = function(component = NULL) {
+      component = .self$check_component(component)
+      return(.self$.starts[component])
+    },
+    stops = function(component = NULL) {
+      component = .self$check_component(component)
+      return(.self$.stops[component])
+    },
+    x = function(component = NULL) {
+      component = .self$check_component(component)
+      groups = .self$group(component)
+      starts = .self$.starts
+      stops = .self$.stops
+      o = list()
+      for (i in 1:length(component))
+        o[[c]] = .self$.X_vec[starts[i]:stops[i]]
+      return(o)
+    },
+    groups = function(component = NULL) {
+      component = .self$check_component(component)
+      return(.self$.groups[component])
+    },
+    involves = function(component = NULL) {
+      component = .self$check_component(component)
+      return(.self$.involves[component])
+    }
   )
 )
 
@@ -128,6 +166,7 @@ flat_mm = function(formula = 1, data = NULL, ...) {
   }
   mml[['groups']] = group
   mml[['involves']] = involves
+
   return(mml)
 }
 
