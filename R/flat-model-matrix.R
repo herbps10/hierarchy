@@ -42,7 +42,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.involves = mml$involves
       .self$.data = data
     },
-    expose = function(...) {
+    expose_matrix = function(...) {
       "Extractor that takes a named vector and provides the relevant
        component with (optionally) a new name.  The renaming syntax follows
        dplyr::rename so the new name is taken from the name of the argument and
@@ -66,6 +66,17 @@ fmm_factory = methods::setRefClass(Class = "fmm",
         }
       }
       return(o)
+    },
+    expose_re = function(re = NULL, flat = FALSE) {
+      if (is.null(re))
+        return(names(.self$.re))
+      else {
+        if (!flat) {
+          return(.self$.re[re])
+        } else {
+          return(flatten_re(.self$.re[re]))
+        }
+      }
     },
     components = function() {
       fields = names(methods::getRefClass("fmm")$fields())
@@ -118,6 +129,24 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     involves = function(component = NULL) {
       component = .self$check_component(component)
       return(.self$.involves[component])
+    },
+    re = function(component = NULL, clear = FALSE) {
+      if (clear) {
+        .self$.re = list()
+        return(NULL)
+      }
+
+      component = .self$check_component(component)
+      cols = .self$.groups[component]
+      cn = .self$.names[cols]
+      name = paste(component, collapse = "-")
+      .self$.re[[name]] = list(
+        name = name,
+	components = component,
+	col_names = cn,
+	col_indexes = cols
+      )
+      return(.self$.re[name])
     }
   )
 )
@@ -167,8 +196,20 @@ flat_mm = function(formula = 1, data = NULL, ...) {
   mml[['groups']] = group
   mml[['involves']] = involves
 
+  ## Names
+  mml[['names']] = colnames(mm)
+
   return(mml)
 }
 
+#' Turn a RE list into flat random effects.
+#'
+#' Flat random effects structure 
+#'
+#' @param re random effects list to flatten
+#' @return flat list for all these RE
+#' @export
+flatten_re = function(re) {
 
+}
 
