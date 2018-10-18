@@ -25,10 +25,13 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .y = "numeric",
     .groups = "list",
     .involves = "list",
-    .data = "data.frame"
+    .data = "data.frame",
+    .re = "list",
+    .names = "character"
   ),
   methods = list(
     initialize = function(formula, data, ...) {
+      "Create the implicit mass matrix and store components."
       mml = flat_mm(formula = formula, data = data, ...)
       .self$.N = mml$N
       .self$.P = mml$P
@@ -41,6 +44,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.groups = mml$groups
       .self$.involves = mml$involves
       .self$.data = data
+      .self$.re = list()
+      .self$.names = mml[['names']]
     },
     expose_matrix = function(...) {
       "Extractor that takes a named vector and provides the relevant
@@ -68,6 +73,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       return(o)
     },
     expose_re = function(re = NULL, flat = FALSE) {
+      "Return a list (or flattened list) representing the 
+       random effects specification."
       if (is.null(re))
         return(names(.self$.re))
       else {
@@ -79,13 +86,21 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       }
     },
     components = function() {
+      "Get a list of the object's fields that can be exposed."
       fields = names(methods::getRefClass("fmm")$fields())
       return(fields)
     },
-    get_data = function() return(as.list(.self$.data)),
+    get_data = function() {
+      "Get the data frame used to construct the matrix."
+      return(as.list(.self$.data))
+    },
     N = function() .self$.N,
     P = function() .self$.P,
     check_component = function(component) {
+      "Verify that the requested (formula) component is 
+       in the model matrix and return its name.  If none
+       is specified (NULL in calling function) then all 
+       are returned."
       available_components = names(.self$.involves)
       if (is.null(component)) {
         return(available_components) 
@@ -137,14 +152,14 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       }
 
       component = .self$check_component(component)
-      cols = .self$.groups[component]
+      cols = unlist(.self$.groups[component])
       cn = .self$.names[cols]
-      name = paste(component, collapse = "-")
+      name = paste(component, collapse = "__")
       .self$.re[[name]] = list(
         name = name,
-	components = component,
-	col_names = cn,
-	col_indexes = cols
+        components = component,
+        col_names = cn,
+        col_indexes = cols
       )
       return(.self$.re[name])
     }
@@ -210,6 +225,17 @@ flat_mm = function(formula = 1, data = NULL, ...) {
 #' @return flat list for all these RE
 #' @export
 flatten_re = function(re) {
-
+  names = sapply(re, `[[`, 'name')
+  lengths = sapply(re, function(x) length(x[['col_indexes']]))
+  columns = lapply(re, `[[`, 'col_indexes')
+  stops = sapply(columns, length) %>% cumsum
+  if (length(stops) == 1)
+    starts = 1
+  else
+    starts = c(1, stops[1:(length(stops)-1)] + 1)
+  columns = unlist(columns)
+  fre = list(names = names, lengths = lengths, columns = columns,
+             stops = stops, starts = starts)
+  return(fre)
 }
 
