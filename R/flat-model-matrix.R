@@ -173,7 +173,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
 #' @return list with Stan-friendly components
 #' @export
 flat_mm = function(formula = 1, data = NULL, ...) { 
-  mm = MatrixModels::model.Matrix(object = f, data = data, sparse = TRUE, ...)
+  mm = MatrixModels::model.Matrix(object = formula, 
+    data = data, sparse = TRUE, ...)
 
   ## Calculate matrix entries
   nze = apply(mm, 1, function(x) which(x != 0))
