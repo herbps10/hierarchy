@@ -40,7 +40,10 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.starts = mml$starts
       .self$.stops = mml$stops
       .self$.X_vec = mml$X_vec
-      .self$.y = mml$y
+      t = terms(formula)
+      pos = attr(t, 'response')
+      dn = all.vars(t)[pos]
+      .self$.y = mml[[dn]]
       .self$.groups = mml$groups
       .self$.involves = mml$involves
       .self$.data = data
@@ -173,8 +176,17 @@ fmm_factory = methods::setRefClass(Class = "fmm",
 #' @return list with Stan-friendly components
 #' @export
 flat_mm = function(formula = 1, data = NULL, ...) { 
-  mm = MatrixModels::model.Matrix(object = formula, 
-    data = data, sparse = TRUE, ...)
+  re_terms = lme4::findbars(lme4:::RHSForm(formula))
+  if (is.null(re_terms)) {
+    mm = MatrixModels::model.Matrix(object = formula, 
+      data = data, sparse = TRUE, ...)
+  } else {
+    mm_obj = lme4:::lFormula(formula, data = data,
+      control = lme4::lmerControl(
+        check.nobs.vs.nlev = "ignore",
+	check.nobs.vs.nRE = "ignore"))
+    mm = cbind(mm_obj$X, mm_obj$reTrms$Zt)
+  }
 
   ## Calculate matrix entries
   nze = apply(mm, 1, function(x) which(x != 0))
@@ -207,7 +219,8 @@ flat_mm = function(formula = 1, data = NULL, ...) {
   involves = list()
   for (g in unique(groupings)) {
     group[[g]] = which(groupings == g) 
-    involves[[g]] = rownames(G)[which(G[,colnames(G) == g] == 1)]
+    if (g != "(Intercept)") 
+      involves[[g]] = rownames(G)[which(G[,colnames(G) == g] == 1)]
   }
   mml[['groups']] = group
   mml[['involves']] = involves

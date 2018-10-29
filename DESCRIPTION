@@ -12,7 +12,8 @@ Imports:
     lubridate,
     dplyr,
     Matrix,
-    MatrixModels
+    MatrixModels,
+    lme4
 VignetteBuilder: knitr
 RoxygenNote: 6.1.0
 Suggests: 
