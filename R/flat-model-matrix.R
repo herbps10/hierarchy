@@ -185,7 +185,8 @@ flat_mm = function(formula = 1, data = NULL, ...) {
       control = lme4::lmerControl(
         check.nobs.vs.nlev = "ignore",
 	check.nobs.vs.nRE = "ignore"))
-    mm = cbind(mm_obj$X, mm_obj$reTrms$Zt)
+    Z = Matrix::Matrix(t(as.matrix(mm_obj$reTrms$Zt)))
+    mm = cbind(mm_obj$X, Z)
   }
 
   ## Calculate matrix entries
