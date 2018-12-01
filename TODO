@@ -1,0 +1,14 @@
+ 1. [DONE] Fix 'mml$involves'
+
+ 2. [DONE] Fix 'mml$groups'
+
+ 3. [DONE]
+    Add RE info
+
+ 4. [DONE] 
+    Organize a list-form output object so the class can pick it up.
+
+ 5. Link the new names, make the class dump the list components required
+    by Stan for r.e. specification.
+
+

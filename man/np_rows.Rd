@@ -13,5 +13,10 @@ np_rows(table)
 data frame rows for all no-parent rows (with ZERO as parent).
 }
 \description{
-Make h_table no-parent rows
+The no-parent rows are the parents of all regions that
+themselves have no parent regions.  These are identified
+as the rows who's parent_region_id does not appear in the 
+'id' column.  They are added so that all parts of the hierarchy
+terminate at a well-defined "parent_region_level" regardless of the
+depth of the hierarchy.
 }

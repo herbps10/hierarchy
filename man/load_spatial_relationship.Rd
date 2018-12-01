@@ -13,5 +13,16 @@ load_spatial_relationship(file)
 table describing the spatial relationship
 }
 \description{
-Load relationship file
+The relationship file lists each region code, level, 
+its parent region code, and the parent region level
+along with the date when the region enters existence
+and when the region ceases existence.  This is a way
+of representing a hierarchy of groups that does not 
+require all parts of the hierarchy to have the same
+number of levels.
+}
+\details{
+When the talbe is loaded we create a unique id that is
+the combination of the parent_region_code and the parent_region_level
+so that the region_code field is not required to be unique.
 }

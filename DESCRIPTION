@@ -15,6 +15,6 @@ Imports:
     MatrixModels,
     lme4
 VignetteBuilder: knitr
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 Suggests: 
     testthat

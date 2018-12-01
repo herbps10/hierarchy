@@ -10,5 +10,7 @@ zero_row()
 an 'h_table' zero_Row
 }
 \description{
-Make h_table zero row.
+This row is the parent of the parents of rows with no parents.
+It exists so that all rows have parents, even the rows that are
+constructed to be the parents of rows with no parents...
 }

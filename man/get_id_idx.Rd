@@ -4,10 +4,10 @@
 \alias{get_id_idx}
 \title{For a code return the index if a code exists or a zero otherwise}
 \usage{
-get_id_idx(code, table)
+get_id_idx(id, table)
 }
 \arguments{
-\item{code}{}
+\item{id}{paste(code, level)}
 
 \item{table}{h_table object.}
 }

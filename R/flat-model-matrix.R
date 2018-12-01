@@ -44,7 +44,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       pos = attr(t, 'response')
       dn = all.vars(t)[pos]
       .self$.y = mml[[dn]]
-      .self$.groups = mml$groups
+      .self$.groups = mml$group
       .self$.involves = mml$involves
       .self$.data = data
       .self$.re = list()
@@ -147,110 +147,6 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     involves = function(component = NULL) {
       component = .self$check_component(component)
       return(.self$.involves[component])
-    },
-    re = function(component = NULL, clear = FALSE) {
-      if (clear) {
-        .self$.re = list()
-        return(NULL)
-      }
-
-      component = .self$check_component(component)
-      cols = unlist(.self$.groups[component])
-      cn = .self$.names[cols]
-      name = paste(component, collapse = "__")
-      .self$.re[[name]] = list(
-        name = name,
-        components = component,
-        col_names = cn,
-        col_indexes = cols
-      )
-      return(.self$.re[name])
     }
   )
 )
-
-#' Create a sparse list model matrix 
-#'
-#' @param formula formula to use
-#' @param data where to look up terms
-#' @return list with Stan-friendly components
-#' @export
-flat_mm = function(formula = 1, data = NULL, ...) { 
-  re_terms = lme4::findbars(lme4:::RHSForm(formula))
-  if (is.null(re_terms)) {
-    mm = MatrixModels::model.Matrix(object = formula, 
-      data = data, sparse = TRUE, ...)
-  } else {
-    mm_obj = lme4:::lFormula(formula, data = data,
-      control = lme4::lmerControl(
-        check.nobs.vs.nlev = "ignore",
-	check.nobs.vs.nRE = "ignore"))
-    Z = Matrix::Matrix(t(as.matrix(mm_obj$reTrms$Zt)))
-    mm = cbind(mm_obj$X, Z)
-  }
-
-  ## Calculate matrix entries
-  nze = apply(mm, 1, function(x) which(x != 0))
-  N = length(nze)
-  stops = sapply(nze, length) %>% cumsum
-  starts = c(1, stops[1:(N-1)] + 1)
-  nze = unlist(nze)
-  X_vec = apply(mm, 1, function(x) x[x != 0])
-  mml = list(
-    N = N, 
-    P = ncol(mm),
-    N_NZE = length(nze),
-    NZE = nze,
-    starts = starts, stops = stops,
-    X_vec = unlist(X_vec)
-  )
-
-  ## Get response variable:
-  t = terms(formula)
-  pos = attr(t, 'response')
-  dn = all.vars(t)[pos]
-  mml[[dn]] = data[[dn]]
-
-  ## Get predictor variables:
-  G  = attr(t, 'factors')
-  groupings = colnames(G)[mm@assign]
-  if (attr(t, 'intercept') != 0)
-    groupings = c('(Intercept)', groupings)
-  group = list()
-  involves = list()
-  for (g in unique(groupings)) {
-    group[[g]] = which(groupings == g) 
-    if (g != "(Intercept)") 
-      involves[[g]] = rownames(G)[which(G[,colnames(G) == g] == 1)]
-  }
-  mml[['groups']] = group
-  mml[['involves']] = involves
-
-  ## Names
-  mml[['names']] = colnames(mm)
-
-  return(mml)
-}
-
-#' Turn a RE list into flat random effects.
-#'
-#' Flat random effects structure 
-#'
-#' @param re random effects list to flatten
-#' @return flat list for all these RE
-#' @export
-flatten_re = function(re) {
-  names = sapply(re, `[[`, 'name')
-  lengths = sapply(re, function(x) length(x[['col_indexes']]))
-  columns = lapply(re, `[[`, 'col_indexes')
-  stops = sapply(columns, length) %>% cumsum
-  if (length(stops) == 1)
-    starts = 1
-  else
-    starts = c(1, stops[1:(length(stops)-1)] + 1)
-  columns = unlist(columns)
-  fre = list(names = names, lengths = lengths, columns = columns,
-             stops = stops, starts = starts)
-  return(fre)
-}
-
