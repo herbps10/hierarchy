@@ -8,8 +8,18 @@
  4. [DONE] 
     Organize a list-form output object so the class can pick it up.
 
- 5. [PARTIAL - re part not done, not tested yet] 
+ 5. [DONE] 
     Link the new names, make the class dump the list components required
-    by Stan for r.e. specification.
+    by Stan for r.e. specification. Also simplified the class s.t. it 
+    has a single 'expose' method and does not track re's itself.
 
+ 6. [FUTURE]
+    Formula parsing needs to extend to handle getting lables for complex
+    random effects (e.g.- y ~ x + (a * b | d)) should parse out into
+    three sets of RE's with independent variances.  For the moment those
+    formulas can just be avoided.
+
+ 7. [FIXME] 
+    This really needs formal tests.  These classes would be straightforward
+    it's just the issue of coming up with some invariants and time.
 

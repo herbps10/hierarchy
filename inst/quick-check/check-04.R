@@ -20,6 +20,7 @@ data = data.frame(
 
 f = y ~ x + (1 | P_tilde_c) + (1 | P_tilde_s)
 
+mml = flat_mm(f, data)
 mobj = hierarchy:::fmm_factory(f, data)
 
 

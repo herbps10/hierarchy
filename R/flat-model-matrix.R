@@ -10,7 +10,6 @@
 #' @field .X_vec N_NZE NZE entries of the model matrix 
 #' @field .y dependent data vector, if applicable
 #' @field .groups index into X_vec for each group of parameters produced by the formula
-#' @field .involves name of data columns involved in each group
 #' @export fmm_factory
 #' @exportClass fmm
 fmm_factory = methods::setRefClass(Class = "fmm",
@@ -22,12 +21,21 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .starts = "numeric",
     .stops = "numeric",
     .X_vec = "numeric",
+    .y_name = "character",
     .y = "numeric",
-    .groups = "list",
-    .involves = "list",
-    .data = "data.frame",
-    .re = "list",
-    .names = "character"
+    .group_columns = "list",
+    .group_terms = "list",
+    .col_group = "character",
+    .col_terms = "list",
+    .col_names = "character",
+    .group_lengths = "list",
+    .re_names = "character",
+    .n_re = "numeric",
+    .n_re_effects = "numeric",
+    .re_start = "numeric",
+    .re_stop = "numeric",
+    .re_idx = "numeric",
+    .data = "data.frame"
   ),
   methods = list(
     initialize = function(formula, data, ...) {
@@ -43,14 +51,23 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       t = terms(formula)
       pos = attr(t, 'response')
       dn = all.vars(t)[pos]
+      .self$.y_name = dn
       .self$.y = mml[[dn]]
-      .self$.groups = mml$group
-      .self$.involves = mml$involves
+      .self$.group_columns = mml$group_columns
+      .self$.group_terms = mml$group_terms
+      .self$.col_group = mml$col_group
+      .self$.col_terms = mml$col_terms
+      .self$.col_names = mml$names
+      .self$.group_lengths = mml$group_lengths
+      .self$.re_names = mml$re_name
+      .self$.n_re = mml$n_re
+      .self$.n_re_effects = mml$n_re_effects
+      .self$.re_start = mml$re_start
+      .self$.re_stop = mml$re_stop
+      .self$.re_idx = mml$re_idx
       .self$.data = data
-      .self$.re = list()
-      .self$.names = mml[['names']]
     },
-    expose_matrix = function(...) {
+    expose = function(...) {
       "Extractor that takes a named vector and provides the relevant
        component with (optionally) a new name.  The renaming syntax follows
        dplyr::rename so the new name is taken from the name of the argument and
@@ -75,23 +92,13 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       }
       return(o)
     },
-    expose_re = function(re = NULL, flat = FALSE) {
-      "Return a list (or flattened list) representing the 
-       random effects specification."
-      if (is.null(re))
-        return(names(.self$.re))
-      else {
-        if (!flat) {
-          return(.self$.re[re])
-        } else {
-          return(flatten_re(.self$.re[re]))
-        }
-      }
-    },
-    components = function() {
+    list_components = function() {
       "Get a list of the object's fields that can be exposed."
       fields = names(methods::getRefClass("fmm")$fields())
       return(fields)
+    },
+    list_terms = function() {
+      return(names(.sefl$.group_terms))
     },
     get_data = function() {
       "Get the data frame used to construct the matrix."
@@ -104,7 +111,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
        in the model matrix and return its name.  If none
        is specified (NULL in calling function) then all 
        are returned."
-      available_components = names(.self$.involves)
+      available_components = .self$list_terms()
       if (is.null(component)) {
         return(available_components) 
       } else {
@@ -143,10 +150,6 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     groups = function(component = NULL) {
       component = .self$check_component(component)
       return(.self$.groups[component])
-    },
-    involves = function(component = NULL) {
-      component = .self$check_component(component)
-      return(.self$.involves[component])
     }
   )
 )

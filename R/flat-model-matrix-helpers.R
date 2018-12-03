@@ -42,6 +42,8 @@ st = function(m) Matrix::Matrix(t(as.matrix(m)))
 m_as_list = function(m) {
   ## Calculate matrix entries
   nze = apply(m, 1, function(x) which(x != 0))
+  if (!is.list(nze)) 
+    nze = apply(nze, 2, list) %>% lapply(unlist)
   N = length(nze)
   stops = sapply(nze, length) %>% cumsum
   starts = c(1, stops[1:(N-1)] + 1)
@@ -53,7 +55,7 @@ m_as_list = function(m) {
     N_NZE = length(nze),
     NZE = nze,
     starts = starts, stops = stops,
-    X_vec = unlist(X_vec)
+    X_vec = as.vector(X_vec)
   )
   return(m_list_form)
 }
@@ -127,6 +129,7 @@ extract_groupings = function(formula, mm, has_re = FALSE) {
     ne_re = length(re_list)
     re_names = names(re_list)
     for (i in seq_along(re_names)) {
+      n_re = n_re + 1
       re_name = re_names[i]
       start_idx = stop_idx + 1
       stop_idx = start_idx + dim(re_list[[re_name]])[1] - 1
