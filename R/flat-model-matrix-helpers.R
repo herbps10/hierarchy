@@ -122,6 +122,7 @@ extract_groupings = function(formula, mm, has_re = FALSE) {
   }
   if (attr(terms, 'intercept') != 0)
     col_group = c('(Intercept)', col_group)
+  col_terms = as.list(col_group)
   group = list()
   group_terms = list()
   for (g in unique(col_group)) {
@@ -136,7 +137,6 @@ extract_groupings = function(formula, mm, has_re = FALSE) {
   re_stop = vector(mode = 'numeric', length = 0)
   re_idx = vector(mode = 'numeric', length = 0)
   if (has_re) {
-    col_terms = as.list(col_group)
     stop_idx = length(unlist(group))
     re_list = mm$reTrms$Ztlist
     ne_re = length(re_list)
