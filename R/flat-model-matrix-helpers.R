@@ -42,8 +42,12 @@ st = function(m) Matrix::Matrix(t(as.matrix(m)))
 m_as_list = function(m) {
   ## Calculate matrix entries
   nze = apply(m, 1, function(x) which(x != 0))
-  if (!is.list(nze)) 
-    nze = apply(nze, 2, list) %>% lapply(unlist)
+  if (!is.list(nze)) {
+    if (is.null(dim(nze)))
+      nze = as.list(nze)
+    else
+      nze = apply(nze, 2, list) %>% lapply(unlist)
+  }
   N = length(nze)
   stops = sapply(nze, length) %>% cumsum
   starts = c(1, stops[1:(N-1)] + 1)
@@ -60,16 +64,25 @@ m_as_list = function(m) {
   return(m_list_form)
 }
 
+#' Extract response name
+#' 
+#' @param formula formula to parse
+#' @return name of LHS variable.
+extract_response_name = function(formula) {
+  t = terms(formula)
+  pos = attr(t, 'response')
+  dn = all.vars(t)[pos]
+  return(dn)
+}
+
+
 #' Extract the formula response column form a data frame
 #'
 #' @param formula, a formula
 #' @param data data frame to fetch from
 #' @return vector of the response column
 extract_response = function(formula, data) {
-  ## Get response variable:
-  t = terms(formula)
-  pos = attr(t, 'response')
-  dn = all.vars(t)[pos]
+  dn = extract_response_name(formula)
   response_list_form = list()
   response_list_form[[dn]] = data[[dn]]
   return(response_list_form)
