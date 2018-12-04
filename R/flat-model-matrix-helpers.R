@@ -49,16 +49,16 @@ m_as_list = function(m) {
       nze = apply(nze, 2, list) %>% lapply(unlist)
   }
   N = length(nze)
-  stops = sapply(nze, length) %>% cumsum
-  starts = c(1, stops[1:(N-1)] + 1)
+  stop = sapply(nze, length) %>% cumsum
+  start = c(1, stop[1:(N-1)] + 1)
   nze = unlist(nze)
   X_vec = apply(m, 1, function(x) x[x != 0])
   m_list_form = list(
     N = N, 
     P = ncol(m),
-    N_NZE = length(nze),
-    NZE = nze,
-    starts = starts, stops = stops,
+    n_nze = length(nze),
+    nze = nze,
+    start = start, stop = stop,
     X_vec = as.vector(X_vec)
   )
   return(m_list_form)

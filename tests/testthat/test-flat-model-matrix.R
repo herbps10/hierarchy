@@ -35,8 +35,8 @@ test_that("test .", {
   expect_named(mml$groups, c("(Intercept)", "x", "P_tilde_c", "P_tilde_s"))
   expect_true(all(unlist(mml$involves) %in% names(mml$groups)))
   expect_true(
-    all((cbind(mml$starts, mml$stops) %>% 
+    all((cbind(mml$start, mml$stop) %>% 
       apply(1, function(x) x[1]:x[2]) %>% 
-      unlist) == 1:mml$N_NZE))
+      unlist) == 1:mml$n_nze))
   
 })

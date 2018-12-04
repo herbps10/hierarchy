@@ -76,7 +76,7 @@ hierarchy_factory = methods::setRefClass(Class = "hierarchy",
     get_vectorized_hierarchy = function(timepoint = NULL) {
       "Get a list of three vectors: 1) the matrix of all hierarchy
        indexes collapsed into a single vector; 2) the location in 
-       the vector where each level starts; and 3) the location (index)
+       the vector where each level start; and 3) the location (index)
        in the vector where each level ends."
       idxs = get_hierarchy_idxs(timepoint)
       idxs_l = apply(idxs, 1, list)
@@ -84,12 +84,12 @@ hierarchy_factory = methods::setRefClass(Class = "hierarchy",
       idxs_l = lapply(idxs_l, function(x) x[x != 1])
       lengths = sapply(idxs_l, length, USE.NAMES = FALSE)
       N = length(lengths)
-      starts = c(1, cumsum(lengths)[1:(N-1)])
-      stops = (starts + lengths - 1)
+      start = c(1, cumsum(lengths)[1:(N-1)])
+      stop = (start + lengths - 1)
       return(list(
         idx = unlist(idxs_l),
-        start = starts,
-        end = stops
+        start = start,
+        end = stop
       ))
     }
   )

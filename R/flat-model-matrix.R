@@ -3,11 +3,11 @@
 #'
 #' @field .N number of observations in model matrix
 #' @field .P number of columns in the model matrix
-#' @field .N_NZE number of non-zero entries in the model matrix
-#' @field .NZE indexes of non-zero entries in the model matrix (RSC)
-#' @field .starts where each row of the model matrix starts in NZE
-#' @field .stops where each row of the model matrix ends in NZE
-#' @field .X_vec N_NZE NZE entries of the model matrix 
+#' @field .n_nze number of non-zero entries in the model matrix
+#' @field .nze indexes of non-zero entries in the model matrix (RSC)
+#' @field .start where each row of the model matrix start in nze
+#' @field .stop where each row of the model matrix ends in nze
+#' @field .X_vec n_nze nze entries of the model matrix 
 #' @field .y dependent data vector, if applicable
 #' @field .groups index into X_vec for each group of parameters produced by the formula
 #' @export fmm_factory
@@ -16,10 +16,10 @@ fmm_factory = methods::setRefClass(Class = "fmm",
   fields = list(
     .N = "numeric",
     .P = "numeric",
-    .N_NZE = "numeric",
-    .NZE = "numeric",
-    .starts = "numeric",
-    .stops = "numeric",
+    .n_nze = "numeric",
+    .nze = "numeric",
+    .start = "numeric",
+    .stop = "numeric",
     .X_vec = "numeric",
     .y_name = "character",
     .y = "numeric",
@@ -43,10 +43,10 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       mml = flat_mm(formula = formula, data = data, ...)
       .self$.N = mml$N
       .self$.P = mml$P
-      .self$.N_NZE = mml$N_NZE
-      .self$.NZE = mml$NZE
-      .self$.starts = mml$starts
-      .self$.stops = mml$stops
+      .self$.n_nze = mml$n_nze
+      .self$.nze = mml$nze
+      .self$.start = mml$start
+      .self$.stop = mml$stop
       .self$.X_vec = mml$X_vec
       t = terms(formula)
       pos = attr(t, 'response')
@@ -127,24 +127,24 @@ fmm_factory = methods::setRefClass(Class = "fmm",
         return(component)
       }
     }, 
-    N_NZE = function() .self$.N_NZE,
-    NZE = function() .self$.NZE,
-    starts = function(component = NULL) {
+    n_nze = function() .self$.n_nze,
+    nze = function() .self$.nze,
+    start = function(component = NULL) {
       component = .self$check_component(component)
-      return(.self$.starts[component])
+      return(.self$.start[component])
     },
-    stops = function(component = NULL) {
+    stop = function(component = NULL) {
       component = .self$check_component(component)
-      return(.self$.stops[component])
+      return(.self$.stop[component])
     },
     x = function(component = NULL) {
       component = .self$check_component(component)
       groups = .self$group(component)
-      starts = .self$.starts
-      stops = .self$.stops
+      start = .self$.start
+      stop = .self$.stop
       o = list()
       for (i in 1:length(component))
-        o[[c]] = .self$.X_vec[starts[i]:stops[i]]
+        o[[c]] = .self$.X_vec[start[i]:stop[i]]
       return(o)
     },
     groups = function(component = NULL) {

@@ -17,15 +17,15 @@ representation
 
 \item{\code{.P}}{number of columns in the model matrix}
 
-\item{\code{.N_NZE}}{number of non-zero entries in the model matrix}
+\item{\code{.n_nze}}{number of non-zero entries in the model matrix}
 
-\item{\code{.NZE}}{indexes of non-zero entries in the model matrix (RSC)}
+\item{\code{.nze}}{indexes of non-zero entries in the model matrix (RSC)}
 
-\item{\code{.starts}}{where each row of the model matrix starts in NZE}
+\item{\code{.start}}{where each row of the model matrix start in nze}
 
-\item{\code{.stops}}{where each row of the model matrix ends in NZE}
+\item{\code{.stop}}{where each row of the model matrix ends in nze}
 
-\item{\code{.X_vec}}{N_NZE NZE entries of the model matrix}
+\item{\code{.X_vec}}{n_nze nze entries of the model matrix}
 
 \item{\code{.y}}{dependent data vector, if applicable}
 

@@ -39,7 +39,7 @@ indexes.}
 
 \item{\code{get_vectorized_hierarchy(timepoint = NULL)}}{Get a list of three vectors: 1) the matrix of all hierarchy
 indexes collapsed into a single vector; 2) the location in 
-the vector where each level starts; and 3) the location (index)
+the vector where each level start; and 3) the location (index)
 in the vector where each level ends.}
 
 \item{\code{initialize(files, ...)}}{Construct hierarchy from given relationship files.}

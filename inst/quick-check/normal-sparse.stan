@@ -4,11 +4,11 @@ data {
 
   vector[N] y;
 
-  int N_NZE;
-  int NZE[N_NZE];
-  int starts[N];
-  int stops[N];
-  vector[N_NZE] X_vec;
+  int n_nze;
+  int nze[n_nze];
+  int start[N];
+  int stop[N];
+  vector[n_nze] X_vec;
 }
 
 parameters {
@@ -25,7 +25,7 @@ model {
   sigma ~ normal(0, 1);
 
   for (i in 1:N)
-    mu[i] = sum(X_vec[starts[i]:stops[i]] .* betas[NZE[starts[i]:stops[i]]]);
+    mu[i] = sum(X_vec[start[i]:stop[i]] .* betas[nze[start[i]:stop[i]]]);
     
   y ~ normal(mu, sigma);
 }
