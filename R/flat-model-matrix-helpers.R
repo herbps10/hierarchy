@@ -54,8 +54,8 @@ m_as_list = function(m) {
   nze = unlist(nze)
   X_vec = apply(m, 1, function(x) x[x != 0])
   m_list_form = list(
-    N = N, 
-    P = ncol(m),
+    n_row = N, 
+    n_col = ncol(m),
     n_nze = length(nze),
     nze = nze,
     start = start, stop = stop,
