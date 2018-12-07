@@ -59,7 +59,7 @@ m_as_list = function(m) {
     n_nze = length(nze),
     nze = nze,
     start = start, stop = stop,
-    X_vec = as.vector(X_vec)
+    X_vec = unlist(X_vec)
   )
   return(m_list_form)
 }

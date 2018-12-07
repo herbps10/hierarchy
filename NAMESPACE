@@ -2,6 +2,7 @@
 
 export(flat_mm)
 export(fmm_factory)
+export(formulate)
 export(hierarchy_factory)
 export(load_csv)
 export(load_spatial_relationship)

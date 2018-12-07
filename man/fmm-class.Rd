@@ -13,9 +13,9 @@ representation
 \section{Fields}{
 
 \describe{
-\item{\code{.N}}{number of observations in model matrix}
+\item{\code{.n_row}}{number of observations in model matrix}
 
-\item{\code{.P}}{number of columns in the model matrix}
+\item{\code{.n_col}}{number of columns in the model matrix}
 
 \item{\code{.n_nze}}{number of non-zero entries in the model matrix}
 
@@ -30,8 +30,6 @@ representation
 \item{\code{.y}}{dependent data vector, if applicable}
 
 \item{\code{.groups}}{index into X_vec for each group of parameters produced by the formula}
-
-\item{\code{.involves}}{name of data columns involved in each group}
 }}
 
 \section{Methods}{
@@ -42,22 +40,19 @@ in the model matrix and return its name.  If none
 is specified (NULL in calling function) then all 
 are returned.}
 
-\item{\code{components()}}{Get a list of the object's fields that can be exposed.}
-
-\item{\code{expose_matrix(...)}}{Extractor that takes a named vector and provides the relevant
+\item{\code{expose(...)}}{Extractor that takes a named vector and provides the relevant
        component with (optionally) a new name.  The renaming syntax follows
        dplyr::rename so the new name is taken from the name of the argument and
        the element to extract is taken from the character vector content.
 
-       For example OBJ$expose(phi_P = 'P') would return the number of (implicit)
-       model matrix columns with the name 'phi_P'.  This is useful to construct
+       For example OBJ$expose(phi_n_col = 'n_col') would return the number of (implicit)
+       model matrix columns with the name 'phi_n_col'.  This is useful to construct
        lists that are going to be used in, e.g.-Stan.}
-
-\item{\code{expose_re(re = NULL, flat = FALSE)}}{Return a list (or flattened list) representing the 
-random effects specification.}
 
 \item{\code{get_data()}}{Get the data frame used to construct the matrix.}
 
 \item{\code{initialize(formula, data, ...)}}{Create the implicit mass matrix and store components.}
+
+\item{\code{list_components()}}{Get a list of the object's fields that can be exposed.}
 }}
 

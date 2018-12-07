@@ -1,8 +1,8 @@
 #' A class for creating a flat sparse model matrix
 #' representation
 #'
-#' @field .N number of observations in model matrix
-#' @field .P number of columns in the model matrix
+#' @field .n_row number of observations in model matrix
+#' @field .n_col number of columns in the model matrix
 #' @field .n_nze number of non-zero entries in the model matrix
 #' @field .nze indexes of non-zero entries in the model matrix (RSC)
 #' @field .start where each row of the model matrix start in nze
@@ -14,8 +14,8 @@
 #' @exportClass fmm
 fmm_factory = methods::setRefClass(Class = "fmm",
   fields = list(
-    .N = "numeric",
-    .P = "numeric",
+    .n_row = "numeric",
+    .n_col = "numeric",
     .n_nze = "numeric",
     .nze = "numeric",
     .start = "numeric",
@@ -41,8 +41,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     initialize = function(formula, data, ...) {
       "Create the implicit mass matrix and store components."
       mml = flat_mm(formula = formula, data = data, ...)
-      .self$.N = mml$N
-      .self$.P = mml$P
+      .self$.n_row = mml$n_row
+      .self$.n_col = mml$n_col
       .self$.n_nze = mml$n_nze
       .self$.nze = mml$nze
       .self$.start = mml$start
@@ -73,8 +73,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
        dplyr::rename so the new name is taken from the name of the argument and
        the element to extract is taken from the character vector content.
 
-       For example OBJ$expose(phi_P = 'P') would return the number of (implicit)
-       model matrix columns with the name 'phi_P'.  This is useful to construct
+       For example OBJ$expose(phi_n_col = 'n_col') would return the number of (implicit)
+       model matrix columns with the name 'phi_n_col'.  This is useful to construct
        lists that are going to be used in, e.g.-Stan."
       fields = names(methods::getRefClass("fmm")$fields())
       args_internal = unlist(list(...))
@@ -104,8 +104,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       "Get the data frame used to construct the matrix."
       return(as.list(.self$.data))
     },
-    N = function() .self$.N,
-    P = function() .self$.P,
+    n_row = function() .self$.n_row,
+    n_col = function() .self$.n_col,
     check_component = function(component) {
       "Verify that the requested (formula) component is 
        in the model matrix and return its name.  If none
