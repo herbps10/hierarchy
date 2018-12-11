@@ -4,10 +4,11 @@
 \alias{formulate}
 \title{Create setting for a model matrix}
 \usage{
-formulate(submodels = list(), data, constants = NULL)
+formulate(models = list(), data, constants = NULL, states = NULL,
+  drop = NULL)
 }
 \arguments{
-\item{submodels, }{a list of formulas.  One formula per}
+\item{models, }{a list of formulas.  One formula per}
 
 \item{data}{data.frame to pull formula terms from.}
 }
@@ -17,6 +18,6 @@ list containing the model matrix for each submodel
 }
 \description{
 Calling this function constructs the (sparse) model
-matrices for all submodels and combines the data
+matrices for all models and combines the data
 into a single list with all necessary prefixes.
 }

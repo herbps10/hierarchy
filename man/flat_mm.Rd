@@ -4,7 +4,7 @@
 \alias{flat_mm}
 \title{Create a sparse list model matrix}
 \usage{
-flat_mm(formula = 1, data = NULL, ...)
+flat_mm(formula = 1, data = NULL, drop = NULL, ...)
 }
 \arguments{
 \item{formula}{formula to use}

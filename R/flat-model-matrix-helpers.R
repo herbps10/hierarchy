@@ -1,33 +1,4 @@
 
-#' Create a sparse list model matrix 
-#'
-#' @param formula formula to use
-#' @param data where to look up terms
-#' @return list with Stan-friendly components
-#' @export
-flat_mm = function(formula = 1, data = NULL, ...) { 
-  has_re = !is.null(lme4::findbars(lme4:::RHSForm(formula)))
-  mml = list()
-  if (!has_re) {
-    mm = MatrixModels::model.Matrix(object = formula, 
-      data = data, sparse = TRUE)
-    mml = m_as_list(mm)
-    mml[['matrix']] = mm
-  } else {
-    mm = lme4:::lFormula(formula, data = data,
-      control = lme4::lmerControl(
-        check.nobs.vs.nlev = "ignore",
-	check.nobs.vs.nRE = "ignore"))
-    mml = list()
-    mml[['matrix']] = do.call(what = cbind, 
-      args = c(list(mm$X), lapply(mm$reTrms$Ztlist, st)))
-    mml = c(m_as_list(mml[['matrix']]), mml)
-  }
-  mml = c(mml, extract_response(formula, data))
-  mml = c(mml, extract_groupings(formula, mm, has_re))
-  mml[['names']] = colnames(mml[['matrix']])
-  return(mml)
-}
 
 #' Inefficiently transpose a sparse matrix
 #' 
@@ -46,13 +17,17 @@ m_as_list = function(m) {
     if (is.null(dim(nze)))
       nze = as.list(nze)
     else
-      nze = apply(nze, 2, list) %>% lapply(unlist)
+      nze = apply(nze, 2, list) 
+      nze = lapply(nze, unlist)
   }
   N = length(nze)
-  stop = sapply(nze, length) %>% cumsum
+  stop = sapply(nze, length)
+  stop = cumsum(stop)
   start = c(1, stop[1:(N-1)] + 1)
   nze = unlist(nze)
   X_vec = apply(m, 1, function(x) x[x != 0])
+  if (is.matrix(X_vec))
+    X_vec = as.vector(X_vec)
   m_list_form = list(
     n_row = N, 
     n_col = ncol(m),
@@ -64,41 +39,7 @@ m_as_list = function(m) {
   return(m_list_form)
 }
 
-#' Extract response name
-#' 
-#' @param formula formula to parse
-#' @return name of LHS variable.
-extract_response_name = function(formula) {
-  t = terms(formula)
-  pos = attr(t, 'response')
-  dn = all.vars(t)[pos]
-  return(dn)
-}
 
-
-#' Extract the formula response column form a data frame
-#'
-#' @param formula, a formula
-#' @param data data frame to fetch from
-#' @return vector of the response column
-extract_response = function(formula, data) {
-  dn = extract_response_name(formula)
-  response_list_form = list()
-  response_list_form[[dn]] = data[[dn]]
-  return(response_list_form)
-}
-
-#' Basic parse to get the LHS and RHS of an lme4 random effect formula.
-#' 
-#' @param name term within parents in formula, e.g., (1 | a).
-#' @return names of lhs and rhs terms, e.g., c(lhs = 1, rhs = "a")
-parse_re_terms = function(name) {
-  o = list()
-  s = strsplit(name, '[ ]*\\|[ ]*')[[1]]
-  o = list(lhs = strsplit(s[1], '[ ]*[+:*][ ]*'),
-           rhs = strsplit(s[2], '[ ]*[+:*][ ]*'))
-  return(o)
-}
 
 #' Extract column indexes and names from a formula
 #' 

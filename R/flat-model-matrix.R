@@ -14,6 +14,7 @@
 #' @exportClass fmm
 fmm_factory = methods::setRefClass(Class = "fmm",
   fields = list(
+    .matrix = "list",
     .n_row = "numeric",
     .n_col = "numeric",
     .n_nze = "numeric",
@@ -40,7 +41,11 @@ fmm_factory = methods::setRefClass(Class = "fmm",
   methods = list(
     initialize = function(formula, data, ...) {
       "Create the implicit mass matrix and store components."
-      mml = flat_mm(formula = formula, data = data, ...)
+      formula = simplify(formula)
+      terms = involves(formula)
+      components = imbue(formula, data)
+
+      .self$.matrix[['mm']] = list(mml$matrix)
       .self$.n_row = mml$n_row
       .self$.n_col = mml$n_col
       .self$.n_nze = mml$n_nze
