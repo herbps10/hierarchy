@@ -165,6 +165,20 @@ imbue = function(x, e) {
       attr(x, 'missing') = FALSE
     return(x)
   }
+  e$assure = function(x) {
+    if (is.null(attr(x, 'type')))
+      if (is.numeric(x))
+        attr(x, 'type') = 'covariate'
+      else 
+	attr(x, 'type') = 'contrast'
+    return(x)
+  }
+  e$extend = function(x, N) {
+    at = attributes(x)
+    x = rep(x, N)
+    attributes(x) = at
+    return(x)
+  }
   t = involves(x)
   o = list()
   N = 0
@@ -172,7 +186,7 @@ imbue = function(x, e) {
     tn = as.character(term)
     o[[tn]] = list()
     for (name in t[[tn]]) {
-      o[[tn]][[name]] = eval(parse(text = name), e)
+      o[[tn]][[name]] = eval(parse(text = paste0('assure(',name, ')')), e)
       o[[tn]][[name]] = e$missing(o[[tn]][[name]])
       N = max(N, length(o[[tn]][[name]]))
     }
@@ -181,44 +195,101 @@ imbue = function(x, e) {
     tn = as.character(term)
     for (name in t[[tn]]) {
       if (length(o[[tn]][[name]]) == 1)
-	o[[tn]][[name]] = rep(o[[tn]][[name]], N)
+	o[[tn]][[name]] = e$extend(o[[tn]][[name]], N)
     }
   }
   return(o)
 }
 
-standard_methods = function() list(
+default_remap_methods = function() list(
   numeric = function(x) x,
   factor = function(x) x,
   integer = function(x) x,
-  character = function(x) as.factor(x),
-  logical = function(x) as.factor(x),
-  unknown = function(x) x[is.na(x)] = 0
+  character = function(x) {
+    at = attributes(x)
+    at[['class']] = NULL
+    x = as.factor(x)
+    attributes(x) = c(at, attributes(x))
+    return(x)
+  },
+  random = function(x) {
+    at = attributes(x)
+    at[['class']] = NULL
+    x = as.factor(x)
+    attributes(x) = c(at, attributes(x))
+    return(x)
+  },
+  logical = function(x) {
+    at = attributes(x)
+    at[['class']] = NULL
+    x = as.factor(x)
+    attributes(x) = c(at, attributes(x))
+    return(x)
+  },
+  treat_missing = function(x) {
+    at = attributes(x)
+    is_missing = is.na(x)
+    x[is_missing] = 0
+    attributes(x) = at
+    attr(x, 'is_missing') = is_missing
+    return(x)
+  }
 )
 
 #' Re-map R types to simpler math-friendly types.
 #'
-remap = function(x, methods = hierarchy:::standard_methods()) {
+remap = function(x, methods = hierarchy:::default_remap_methods()) {
   for (term in names(x)) {
     tn = as.character(term)
     for (name in names(x[[tn]])) {
       type = attr(x[[tn]][[name]], 'type')
+      if (isTRUE(attr(x[[tn]][[name]], 'missing'))) {
+	x[[tn]][[name]] = methods[['treat_missing']](x[[tn]][[name]])
+      }
+      if (isTRUE(attr(x[[tn]][[name]], 'type') == 'random')) {
+        x[[tn]][[name]] = methods[['random']](x[[tn]][[name]])
+      }
       mode = class(x[[tn]][[name]])
       x[[tn]][[name]] = methods[[mode]](x[[tn]][[name]])
-      if (isTRUE(attr(x[[tn]][[name]], 'missing'))) {
-        d = x[[tn]][[name]]
-	is_missing = is.na(d)
-	d[is.na(d)] = 0
-	x[[tn]][[name]] = d
-	attr(x[[tn]][[name]], 'is_missing') = is_missing
-      }
     }
   }
   return(x) 
 }
 
+default_expand_methods = function() list(
+  intercept = function(x = NULL) {
+    if (!is.numeric(x)) {
+      at = attributes(x) 
+      contrast = contrasts(x, contrasts = FALSE, sparse = TRUE)
+      x = Matrix::t(Matrix::fac2sparse(x, contrasts.arg = contrast))
+    }
+    return(x)
+  },
+  contrats = function(x) {
+    at = attributes(x) 
+    contrast = contrasts(x, contrasts = TRUE, sparse = TRUE)
+    x = Matrix::t(Matrix::fac2sparse(x, contrasts.arg = contrast))
+  },
+  constant = function(x) return(x),
+  random = function(x) {
+    at = attributes(x) 
+    x = Matrix::t(Matrix::fac2sparse(x))
+  } 
+)
 
-
-
+#' Expand factors into model matrix blocks
+#' 
+#' @param x result of `remap`.
+#' @return per-term list of lists of matrices
+expand = function(x, methods = default_expand_methods()) {
+  for (term in names(x)) {
+    tn = as.character(term)
+    for (name in names(x[[tn]])) {
+      type = attr(x[[tn]][[name]], 'type')
+      x[[tn]][[name]] = methods[[type]](x[[tn]][[name]])
+    }
+  }
+  return(x) 
+}
 
 

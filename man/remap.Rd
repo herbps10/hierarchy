@@ -4,7 +4,7 @@
 \alias{remap}
 \title{Re-map R types to simpler math-friendly types.}
 \usage{
-remap(x, methods = standard_methods())
+remap(x, methods = hierarchy:::default_remap_methods())
 }
 \description{
 Re-map R types to simpler math-friendly types.

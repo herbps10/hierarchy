@@ -43,7 +43,11 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       "Create the implicit mass matrix and store components."
       formula = simplify(formula)
       terms = involves(formula)
-      components = imbue(formula, data)
+      data_env = as.environment(data)
+      components = imbue(formula, data_env)
+      simple_types = remap(components)
+      submatrices = expand(simple_types)
+
 
       .self$.matrix[['mm']] = list(mml$matrix)
       .self$.n_row = mml$n_row
