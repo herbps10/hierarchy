@@ -1,5 +1,6 @@
 
 
+
 is_formula = function(x) op(x) == "~" 
 op = function(x) x[[1]]
 lhs = function(x) x[[2]]
@@ -141,7 +142,10 @@ involves = function(x) {
 imbue = function(x, e) {
   e$no_intercept = function() NULL
   e$intercept = function() {
+    x = 1 
     attr(x, 'type') = 'intercept'
+    return(x)
+  }
   e$constant = function(x) {
     attr(x, 'type') = 'constant'
     return(x)
@@ -154,6 +158,13 @@ imbue = function(x, e) {
     attr(x, 'type') = 'random'
     return(x) 
   }
+  e$missing = function(x) {
+    if (any(is.na(x)))
+      attr(x, 'missing') = TRUE
+    else
+      attr(x, 'missing') = FALSE
+    return(x)
+  }
   t = involves(x)
   o = list()
   N = 0
@@ -162,10 +173,12 @@ imbue = function(x, e) {
     o[[tn]] = list()
     for (name in t[[tn]]) {
       o[[tn]][[name]] = eval(parse(text = name), e)
+      o[[tn]][[name]] = e$missing(o[[tn]][[name]])
       N = max(N, length(o[[tn]][[name]]))
     }
   }
-  for (term in t) {
+  for (term in names(t)) {
+    tn = as.character(term)
     for (name in t[[tn]]) {
       if (length(o[[tn]][[name]]) == 1)
 	o[[tn]][[name]] = rep(o[[tn]][[name]], N)
@@ -174,12 +187,34 @@ imbue = function(x, e) {
   return(o)
 }
 
+standard_methods = function() list(
+  numeric = function(x) x,
+  factor = function(x) x,
+  integer = function(x) x,
+  character = function(x) as.factor(x),
+  logical = function(x) as.factor(x),
+  unknown = function(x) x[is.na(x)] = 0
+)
+
 #' Re-map R types to simpler math-friendly types.
 #'
-remap = function(x, methods = hierarchy::standard_methods()) {
-  1) deal with NA 
-  2) deal with characters
-  3) ... (?) 
+remap = function(x, methods = hierarchy:::standard_methods()) {
+  for (term in names(x)) {
+    tn = as.character(term)
+    for (name in names(x[[tn]])) {
+      type = attr(x[[tn]][[name]], 'type')
+      mode = class(x[[tn]][[name]])
+      x[[tn]][[name]] = methods[[mode]](x[[tn]][[name]])
+      if (isTRUE(attr(x[[tn]][[name]], 'missing'))) {
+        d = x[[tn]][[name]]
+	is_missing = is.na(d)
+	d[is.na(d)] = 0
+	x[[tn]][[name]] = d
+	attr(x[[tn]][[name]], 'is_missing') = is_missing
+      }
+    }
+  }
+  return(x) 
 }
 
 

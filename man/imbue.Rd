@@ -4,7 +4,7 @@
 \alias{imbue}
 \title{Interpret a formula in the context of some data.}
 \usage{
-imbue(x, e, s)
+imbue(x, e)
 }
 \arguments{
 \item{x}{formula}
