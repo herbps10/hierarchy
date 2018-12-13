@@ -4,15 +4,12 @@
 \alias{imbue}
 \title{Interpret a formula in the context of some data.}
 \usage{
-imbue(x, e)
+imbue(t, e, methods = hierarchy:::default_imbue_methods())
 }
 \arguments{
-\item{x}{formula}
+\item{t}{LHS or RHS of 'terms' calculated by 'involves'}
 
 \item{e}{environment to use for data, can be a list}
-
-\item{s}{names of state variables to be parsed but not
-included.}
 }
 \value{
 list with all formula terms defined from the 

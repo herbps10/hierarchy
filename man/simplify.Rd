@@ -4,15 +4,13 @@
 \alias{simplify}
 \title{Simplify formulas to a standard form using}
 \usage{
-simplify(node, side = rhs, debug = FALSE)
+simplify(node)
 }
 \arguments{
 \item{node}{an R formula object.}
 
 \item{side}{which side of the formula to parse, either the `rhs` (default)
 or the `lhs` functions.}
-
-\item{debug}{iff TRUE we print the current node as we parse.}
 }
 \value{
 a simplified formula involving _only_ undefined functions, 

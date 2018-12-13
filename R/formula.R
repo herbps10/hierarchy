@@ -148,6 +148,8 @@ just_names = function(node) {
 
 is_name = function(x) is.name(x) || is_fname(x)
 
+#' Deal with parens and interactions.
+#' @export
 distribute = function(node) {
   if (is.name(node)) {
     return(node)
@@ -196,17 +198,19 @@ distribute = function(node) {
   }
 }
 
+#' Simplify interaction terms.
+#' @export
 subterms = function(node) {
   if (is.name(node)) {
     return(node)
   } else if (is_fname(op(node)) && length(node) == 1 &&
 	     op(node) != 'term') {
-    return(call('terms', node))
+    return(call('term', node))
   } else if (is_fname(op(node)) && length(node) == 1) {
     return(node)
   } else if (is_fname(op(node)) && length(node) == 2 &&
              is.call(arg(node)) && op(node) != 'term') {
-    return(call('terms', subterms(node)))
+    return(call('term', subterms(node)))
   } else if (op(node) == '~') {
     return(call('~', subterms(lhs(node)), subterms(rhs(node))))
   } else if (is_fname(func(node))) {
@@ -227,7 +231,25 @@ subterms = function(node) {
   }
 }
 
+#' Terms as list
+term_list = function(node) {
+  if (is.name(node) || op(node) == 'term')
+    return(node)
+  else if (op(node) == '~') 
+    return(list(lhs = term_list(lhs(node)), rhs = term_list(rhs(node))))
+  else if (op(node) == '+')
+    return(c(term_list(lhs(node)), term_list(rhs(node))))
+  else {
+    warning("incomplete")
+    return(node)
+  }
+}
 
+
+merge_subterms = function(...) {
+  # deal with combining individual factors, keep
+  # covariates, where do re's come in, etc...
+}
 
 default_imbue_methods = function() list(
   no_intercept = function() NULL,
@@ -269,6 +291,14 @@ default_imbue_methods = function() list(
     x = rep(x, N)
     attributes(x) = at
     return(x)
+  },
+  term = function(...) {
+    components = list(...)
+    cl = sapply(components, length)
+    N = max(cl)
+    components = lapply(components, extend, N = N)
+    term = do.call(what = mapply, c(merge_subterms, components))
+    return(term)
   }
 )
 
