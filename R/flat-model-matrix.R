@@ -48,6 +48,14 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       simple_types = remap(components)
       submatrices = expand(simple_types)
 
+      simple_formula = simplify(formula)
+      std_formula = distribute(simple_formula)
+      terms = involves(formula)
+      data_env = as.environment(data)
+      components = imbue(formula, data_env)
+      simple_types = remap(components)
+      submatrices = expand(simple_types)
+
 
       .self$.matrix[['mm']] = list(mml$matrix)
       .self$.n_row = mml$n_row

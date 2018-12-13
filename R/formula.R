@@ -227,7 +227,7 @@ imbue = function(x, e) {
     return(x) 
   }
   e$random = function(...) {
-    x = list(...)
+    x = do.call(paste, c(list(...), list(sep='::')))
     attr(x, 'type') = 'random'
     return(x) 
   }
@@ -269,11 +269,31 @@ imbue = function(x, e) {
 	stop("Mixed up data types.")
     }
   }
+  t = o
+  o = list()
   for (term in names(t)) {
     tn = as.character(term)
+    o[[tn]] = list()
+    tn = as.character(term)
     for (i in seq_along(t[[tn]])) {
+      tl = length(t[[tn]][[i]])
+      ol = length(o[[tn]])
+      if (is.list(t[[tn]][[i]])) {
+	at = attributes(t[[tn]][[i]])
+        for (j in 1:tl) {
+          o[[tn]][[ol + j]] = t[[tn]][[i]][[j]]
+	  attributes(o[[tn]][[ol + j]]) = at
+	}
+      } else {
+        o[[tn]][[ol + 1]] = t[[tn]][[i]]
+      }
+    }
+  }
+  for (term in names(o)) {
+    tn = as.character(term)
+    for (i in seq_along(o[[tn]])) {
       if ((is.atomic(o[[tn]][[i]]) && length(o[[tn]][[i]]) == 1) ||
-          (is.list(o[[tn]][[i]])    && length(o[[tn]][[i]][[1]]) == 1)) {
+          (is.list(o[[tn]][[i]])   && length(o[[tn]][[i]]) == 1)) {
 	o[[tn]][[i]] = e$extend(o[[tn]][[i]], N)
         o[[tn]][[i]] = e$assure(o[[tn]][[i]])
       }
@@ -322,16 +342,16 @@ default_remap_methods = function() list(
 remap = function(x, methods = hierarchy:::default_remap_methods()) {
   for (term in names(x)) {
     tn = as.character(term)
-    for (name in names(x[[tn]])) {
-      type = attr(x[[tn]][[name]], 'type')
-      if (isTRUE(attr(x[[tn]][[name]], 'missing'))) {
-	x[[tn]][[name]] = methods[['treat_missing']](x[[tn]][[name]])
+    for (i in seq_along(x[[tn]])) {
+      type = attr(x[[tn]][[i]], 'type')
+      if (isTRUE(attr(x[[tn]][[i]], 'missing'))) {
+	x[[tn]][[i]] = methods[['treat_missing']](x[[tn]][[i]])
       }
-      if (isTRUE(attr(x[[tn]][[name]], 'type') == 'random')) {
-        x[[tn]][[name]] = methods[['random']](x[[tn]][[name]])
+      if (isTRUE(attr(x[[tn]][[i]], 'type') == 'random')) {
+        x[[tn]][[i]] = methods[['random']](x[[tn]][[i]])
       }
-      mode = class(x[[tn]][[name]])
-      x[[tn]][[name]] = methods[[mode]](x[[tn]][[name]])
+      mode = class(x[[tn]][[i]])
+      x[[tn]][[i]] = methods[[mode]](x[[tn]][[i]])
     }
   }
   return(x) 
@@ -365,9 +385,10 @@ default_expand_methods = function() list(
 expand = function(x, methods = default_expand_methods()) {
   for (term in names(x)) {
     tn = as.character(term)
-    for (name in names(x[[tn]])) {
-      type = attr(x[[tn]][[name]], 'type')
-      x[[tn]][[name]] = methods[[type]](x[[tn]][[name]])
+    for (i in seq_along(x[[tn]])) {
+      cat("term: ", tn, ", i: ", i, "\n")
+      type = attr(x[[tn]][[i]], 'type')
+      x[[tn]][[i]] = methods[[type]](x[[tn]][[i]])
     }
   }
   return(x) 
