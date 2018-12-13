@@ -41,18 +41,13 @@ fmm_factory = methods::setRefClass(Class = "fmm",
   methods = list(
     initialize = function(formula, data, ...) {
       "Create the implicit mass matrix and store components."
-      formula = distribute(simplify(formula))
-      terms = involves(formula)
-      data_env = as.environment(data)
-      components = imbue(formula, data_env)
-      simple_types = remap(components)
-      submatrices = expand(simple_types)
 
       simple_formula = simplify(formula)
       std_formula = distribute(simple_formula)
       terms = involves(formula)
       data_env = as.environment(data)
-      components = imbue(formula, data_env)
+      dependent = imbue(terms[['lhs']], data_env)
+      components = imbue(terms[['rhs']], data_env)
       simple_types = remap(components)
       submatrices = expand(simple_types)
 

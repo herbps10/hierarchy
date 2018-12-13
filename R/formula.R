@@ -100,6 +100,10 @@ simplify = function(node) {
 just_names = function(node) {
   if (is.name(node)) 
     return(pairlist(node))
+  else if (is_fname(op(node)))
+    return(c(pairlist(op(node)), just_names(arg(node))))
+  else if (is_fname(op(node))) 
+    return(pairlist(node))
   else if (op(node) == '(')
     return(pairlist(just_names(lhs(node))))
   else if (op(node) == ':')
@@ -162,7 +166,7 @@ split_formula = function(node) {
   if (is_name(node) || op(node) == ':')
     return(node)
   if (op(node) == '~')
-    return(list(lhs = split_formula(lhs(node)), rhs = split_formula(rhs(node))))
+    return(call('~', split_formula(lhs(node)), rhs = split_formula(rhs(node))))
   else if (op(node) == '+')
     return(c(split_formula(lhs(node)), split_formula(rhs(node))))
   else {
@@ -182,6 +186,7 @@ subterms = function(node) {
   }
 }
 
+
 #' Calculate which variables are involved in which 
 #' simple or interaction term in the formula
 #'
@@ -194,65 +199,68 @@ involves = function(x) {
   x = distribute(simplify(x))
   terms = split_formula(x)
   variables = list(
-    lhs = lapply(terms[['lhs']], subterms),
+    lhs = lapply(terms[['lhs']], subterms), 
     rhs = lapply(terms[['rhs']], subterms)
   )
+
   names(variables[['lhs']]) = variables[['lhs']]
   names(variables[['rhs']]) = variables[['rhs']]
   return(variables)
 }
 
-#' Interpret a formula in the context of some data.
-#'
-#' @param x formula
-#' @param e environment to use for data, can be a list
-#' @param s names of state variables to be parsed but not
-#'          included.
-#' @return list with all formula terms defined from the 
-#'         environment.
-#' @export
-imbue = function(x, e) {
-  e$no_intercept = function() NULL
-  e$intercept = function() {
+default_imbue_methods = function() list(
+  no_intercept = function() NULL,
+  intercept = function() {
     x = 1 
     attr(x, 'type') = 'intercept'
     return(x)
-  }
-  e$constant = function(x) {
+  },
+  constant = function(x) {
     attr(x, 'type') = 'constant'
     return(x)
-  }
-  e$state = function(x) {
+  },
+  state = function(x) {
     attr(x, 'type') = 'state'
     return(x) 
-  }
-  e$random = function(...) {
+  },
+  random = function(...) {
     x = do.call(paste, c(list(...), list(sep='::')))
     attr(x, 'type') = 'random'
     return(x) 
-  }
-  e$missing = function(x) {
+  },
+  missing = function(x) {
     if (any(is.na(x)))
       attr(x, 'missing') = TRUE
     else
       attr(x, 'missing') = FALSE
     return(x)
-  }
-  e$assure = function(x) {
+  },
+  assure = function(x) {
     if (is.null(attr(x, 'type')))
       if (is.numeric(x))
         attr(x, 'type') = 'covariate'
       else 
 	attr(x, 'type') = 'contrast'
     return(x)
-  }
-  e$extend = function(x, N) {
+  },
+  extend = function(x, N) {
     at = attributes(x)
     x = rep(x, N)
     attributes(x) = at
     return(x)
   }
-  t = involves(x)[['rhs']]
+)
+
+#' Interpret a formula in the context of some data.
+#'
+#' @param t LHS or RHS of 'terms' calculated by 'involves'
+#' @param e environment to use for data, can be a list
+#' @return list with all formula terms defined from the 
+#'         environment.
+#' @export
+imbue = function(t, e, methods = hierarchy:::default_imbue_methods()) {
+  for (name in names(methods)) 
+    assign(x = name, value = methods[[name]], pos = e)
   o = list()
   N = 0
   for (term in names(t)) {
