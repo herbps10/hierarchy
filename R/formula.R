@@ -47,6 +47,32 @@ is_interaction = function(x) is_simple(x, c(':','('))
 
 is_fname = function(x) grepl('^[[:lower:][:upper:]][[:alnum:]]+$', x)
 
+is_operator = function(x, op =  c(':', '+', '*', '(', '|', '~')) {
+  for (operator in op)
+    if (x == operator)
+      return(TRUE)
+  return(FALSE)
+}
+
+no_operator = function(x) !is_operator(x)
+
+fails_no_test = function(node, tests = list(no_operator)) {
+  if (is.name(node))
+    return(TRUE)
+  good = TRUE
+  for (f in tests) {
+    good = good && f(rlang::node_car(node))
+    if (!is.null(rlang::node_cdr(node)))
+      good = good && fails_no_test(rlang::node_cdr(node), tests)
+  }
+  return(good)
+}
+
+has_no_operator = function(x) fails_no_test(x, tests = list(no_operator))
+has_operator = function(node, op = c(':', '+', '*', '(', '|', '~')) !is.name(node) && (
+    is_operator(rlang::node_car(node), op) || (
+    !is.null(rlang::node_cdr(node))) && has_operator(rlang::node_cdr(node)))
+
 
 #' Simplify formulas to a standard form using 
 #'
@@ -100,12 +126,20 @@ simplify = function(node) {
 just_names = function(node) {
   if (is.name(node)) 
     return(pairlist(node))
-  else if (is_fname(op(node)))
-    return(c(pairlist(op(node)), just_names(arg(node))))
-  else if (is_fname(op(node))) 
-    return(pairlist(node))
+  else if (is_fname(op(node)) &&  is.null(rlang::node_cdr(node))) {
+    return(node)
+  } else if (is_fname(op(node)) && !is.null(rlang::node_cdr(node))) {
+    arguments = rlang::node_cdr(node)
+    if (length(arguments) == 0 || all(sapply(arguments, is.name))) {
+      return(node)
+    } else {
+      call_list = do.call(c, lapply(node, just_names))
+      return(as.call(call_list))
+    }
+  } else if (is_fname(op(node)))
+    return(pairlist(op(node)))
   else if (op(node) == '(')
-    return(pairlist(just_names(lhs(node))))
+    return(pairlist(just_names(arg(node))))
   else if (op(node) == ':')
     return(c(just_names(lhs(node)), just_names(rhs(node))))
   else
@@ -162,51 +196,38 @@ distribute = function(node) {
   }
 }
 
-split_formula = function(node) {
-  if (is_name(node) || op(node) == ':')
+subterms = function(node) {
+  if (is.name(node)) {
     return(node)
-  if (op(node) == '~')
-    return(call('~', split_formula(lhs(node)), rhs = split_formula(rhs(node))))
-  else if (op(node) == '+')
-    return(c(split_formula(lhs(node)), split_formula(rhs(node))))
-  else {
+  } else if (is_fname(op(node)) && length(node) == 1 &&
+	     op(node) != 'term') {
+    return(call('terms', node))
+  } else if (is_fname(op(node)) && length(node) == 1) {
+    return(node)
+  } else if (is_fname(op(node)) && length(node) == 2 &&
+             is.call(arg(node)) && op(node) != 'term') {
+    return(call('terms', subterms(node)))
+  } else if (op(node) == '~') {
+    return(call('~', subterms(lhs(node)), subterms(rhs(node))))
+  } else if (is_fname(func(node))) {
+    arguments = rlang::node_cdr(node)
+    if (length(arguments) == 0 || all(sapply(arguments, is.name))) {
+      return(node)
+    } else {
+      call_list = do.call(c, lapply(node, just_names))
+      return(as.call(call_list))
+    }
+  } else if (!has_operator(node, '+') && func(node) != 'term') {
+    return(subterms(call('term', node)))
+  } else if (op(node) == '+') {
+      return(call('+', subterms(lhs(node)), subterms(rhs(node))))
+  } else {
     warning("incomplete")
     return(node)
   }
 }
 
-subterms = function(node) { 
-  if (is_name(node))
-    return(list(node))
-  else if (op(node) == ':')
-    return(c(subterms(lhs(node)), subterms(rhs(node))))
-  else {
-    warning("incomplete")
-    return(node)
-  }
-}
 
-
-#' Calculate which variables are involved in which 
-#' simple or interaction term in the formula
-#'
-#' @param x formula
-#' @return list, one entry per term, one character vector
-#'               per entry listing the involved data items
-#'               states, or calls.
-#' @export
-involves = function(x) {
-  x = distribute(simplify(x))
-  terms = split_formula(x)
-  variables = list(
-    lhs = lapply(terms[['lhs']], subterms), 
-    rhs = lapply(terms[['rhs']], subterms)
-  )
-
-  names(variables[['lhs']]) = variables[['lhs']]
-  names(variables[['rhs']]) = variables[['rhs']]
-  return(variables)
-}
 
 default_imbue_methods = function() list(
   no_intercept = function() NULL,
