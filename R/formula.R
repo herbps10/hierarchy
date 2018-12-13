@@ -4,8 +4,12 @@
 is_formula = function(x) op(x) == "~" 
 op = function(x) x[[1]]
 lhs = function(x) x[[2]]
+arg = function(x) lhs(x)
 rhs = function(x) x[[3]]
 response_name = function(x) if (is_formula(x)) lhs(x) else NULL
+
+func = function(x) rlang::node_car(x)
+args = function(x) rlang::node_cdr(x)
 
 #' Identify 'simple' call componenets.
 #' 
@@ -41,6 +45,9 @@ is_simple = function(x, simple = c('+', ':', '(')) {
 #' @return TRUE iff the call is an interaction.
 is_interaction = function(x) is_simple(x, c(':','('))
 
+is_fname = function(x) grepl('^[[:lower:][:upper:]][[:alnum:]]+$', x)
+
+
 #' Simplify formulas to a standard form using 
 #'
 #' Applies a recursive descent parser to transform
@@ -52,60 +59,125 @@ is_interaction = function(x) is_simple(x, c(':','('))
 #' @param node an R formula object.
 #' @param side which side of the formula to parse, either the `rhs` (default)
 #'             or the `lhs` functions.
-#' @param debug iff TRUE we print the current node as we parse.
 #' @return a simplified formula involving _only_ undefined functions, 
 #'           intercept-related calls, parens, '+', and ':'
 #' @export
-simplify = function(node, side = rhs, debug = FALSE) {
-  if (debug)
-    print(node)
+simplify = function(node) {
   if (is.name(node)) {
     return(node)
   } else if (op(node) == '~') {
-    return(simplify(side(node)))
+    return(call('~', simplify(lhs(node)), simplify(rhs(node))))
   } else if (op(node) == '+') {
     return(call("+", simplify(lhs(node)), simplify(rhs(node))))
   } else if (op(node) == '(') {
-    if (is.name(node[[2]]))
-      return(node[[2]])
-    else 
-      return(call("(", simplify(node[[2]])))
+    if (is.name(arg(node)))
+      return(arg(node))
+    else {
+      return(call("(", simplify(arg(node))))
+    }
   } else if (op(node) == '*') { 
     return(simplify(call("+", 
       call("+", lhs(node), rhs(node)), call(":", lhs(node), rhs(node)))))
   } else if (op(node) == ':') {
-    if (is_interaction(node)) {
-      return(node)
-    } else if (is_simple(node)      && !is.name(lhs(node)) && 
-	       op(lhs(node)) == '(' && !is_interaction(lhs(node))) {
-      return(simplify(call('+', 
-        simplify(call(':', rhs(node), call('(', lhs(lhs(node)[[2]])))),
-	simplify(call(':', rhs(node), call('(', rhs(lhs(node)[[2]]))))
-      )))
-    } else if (is_simple(node) && !is.name(rhs(node)) && 
-	       op(rhs(node)) == '(' && !is_interaction(rhs(node))) {
-      return(simplify(call('+', 
-        simplify(call(':', lhs(node), call('(', rhs(rhs(node)[[2]])))),
-   	simplify(call(':', lhs(node), call('(', lhs(rhs(node)[[2]]))))
-      )))
-    } else {
-      return(simplify(call(":", simplify(lhs(node)), simplify(rhs(node)))))
-    }
+      return(call(":", simplify(lhs(node)), simplify(rhs(node))))
   } else if (op(node) == "|") {
-    if (!is.call(lhs(node))) {
-      return(simplify(call(":", simplify(lhs(node)), 
-		      call("random", simplify(rhs(node))))))
-    } else if (op(lhs(node)) == "+") {
-      return(call("+", simplify(call(":", lhs(lhs(node)), simplify(rhs(node)))),
-                       simplify(call("|", rhs(lhs(node)), simplify(rhs(node))))))
-    } else {
-      return(simplify(call("|", simplify(lhs(node)), simplify(rhs(node)))))
-    }
+    return(simplify(call(":", 
+      call('(', lhs(node)), call('random', rhs(node))
+    )))
+  } else if (is_fname(op(node))) {
+      return(call(as.character(op(node)), simplify(arg(node))))
   } else if (node == "1") {
     return(call('intercept'))
   } else if (node == "0") {
     return(call('no_intercept'))
+  } else if (op(node) == "I") {
+    return(call('eval', arg(node)))
   } else {
+    return(node)
+  }
+}
+
+just_names = function(node) {
+  if (is.name(node)) 
+    return(pairlist(node))
+  else if (op(node) == '(')
+    return(pairlist(just_names(lhs(node))))
+  else if (op(node) == ':')
+    return(c(just_names(lhs(node)), just_names(rhs(node))))
+  else
+    stop("Something is wrong.")
+}
+
+is_name = function(x) is.name(x) || is_fname(x)
+
+distribute = function(node) {
+  if (is.name(node)) {
+    return(node)
+  } else if (op(node) == '~') {
+    return(call('~', distribute(lhs(node)), distribute(rhs(node))))
+  } else if (op(node) == '+') {
+    return(call('+', distribute(lhs(node)), distribute(rhs(node))))
+  } else if (op(node) == '(') {
+    return(distribute(arg(node)))
+  } else if (op(node) == ':') {
+    if (is_name(lhs(node)) && is_name(rhs(node))) {
+      return(call(':', distribute(lhs(node)), distribute(rhs(node))))
+    } else if (!is_name(lhs(node)) && op(lhs(node)) == '(') {
+      if (is_name(arg(lhs(node)))) {
+	return(distribute(call(':', arg(lhs(node)), rhs(node))))
+      } else {
+        return(distribute(call('+', 
+	  call(':', lhs(lhs(node)), rhs(node)),
+	  call(':', rhs(lhs(node)), rhs(node))
+	)))
+      }
+    } else if (!is_name(rhs(node)) && op(rhs(node)) == '(') {
+      if (is_name(arg(rhs(node)))) {
+	return(distribute(call(':', arg(rhs(node)), lhs(node))))
+      } else {
+        return(distribute(call('+', 
+	  call(':', lhs(node), rhs(rhs(node))),
+	  call(':', lhs(node), lhs(rhs(node)))
+	)))
+      }
+    } else {
+      warning("incomplete")
+      return(node)
+    }
+  } else if (is_fname(func(node))) {
+    arguments = rlang::node_cdr(node)
+    if (length(arguments) == 0 || all(sapply(arguments, is.name))) {
+      return(node)
+    } else {
+      call_list = do.call(c, lapply(node, just_names))
+      return(as.call(call_list))
+    }
+  } else {
+    warning("incomplete")
+    return(node)
+  }
+}
+
+split_formula = function(node) {
+  if (is_name(node) || op(node) == ':')
+    return(node)
+  if (op(node) == '~')
+    return(list(lhs = split_formula(lhs(node)), rhs = split_formula(rhs(node))))
+  else if (op(node) == '+')
+    return(c(split_formula(lhs(node)), split_formula(rhs(node))))
+  else {
+    warning("incomplete")
+    return(node)
+  }
+}
+
+subterms = function(node) { 
+  if (is_name(node))
+    return(list(node))
+  else if (op(node) == ':')
+    return(c(subterms(lhs(node)), subterms(rhs(node))))
+  else {
+    warning("incomplete")
     return(node)
   }
 }
@@ -119,14 +191,14 @@ simplify = function(node, side = rhs, debug = FALSE) {
 #'               states, or calls.
 #' @export
 involves = function(x) {
-  x = simplify(x)
-  text = paste(deparse(x), collapse = ' ')
-  text = gsub(' \\(([^+]+)\\)', ' \\1', text)
-  text = gsub('[ ]+', ' ', text)
-  terms = strsplit(text, '\\+')[[1]]
-  terms = gsub('[ ]+', '', terms)
-  variables = strsplit(terms, ':')
-  names(variables) = terms
+  x = distribute(simplify(x))
+  terms = split_formula(x)
+  variables = list(
+    lhs = lapply(terms[['lhs']], subterms),
+    rhs = lapply(terms[['rhs']], subterms)
+  )
+  names(variables[['lhs']]) = variables[['lhs']]
+  names(variables[['rhs']]) = variables[['rhs']]
   return(variables)
 }
 
@@ -154,7 +226,8 @@ imbue = function(x, e) {
     attr(x, 'type') = 'state'
     return(x) 
   }
-  e$random = function(x) {
+  e$random = function(...) {
+    x = list(...)
     attr(x, 'type') = 'random'
     return(x) 
   }
@@ -179,23 +252,31 @@ imbue = function(x, e) {
     attributes(x) = at
     return(x)
   }
-  t = involves(x)
+  t = involves(x)[['rhs']]
   o = list()
   N = 0
   for (term in names(t)) {
     tn = as.character(term)
     o[[tn]] = list()
-    for (name in t[[tn]]) {
-      o[[tn]][[name]] = eval(parse(text = paste0('assure(',name, ')')), e)
-      o[[tn]][[name]] = e$missing(o[[tn]][[name]])
-      N = max(N, length(o[[tn]][[name]]))
+    for (i in seq_along(t[[tn]])) {
+      o[[tn]][[i]] = eval(t[[tn]][[i]], e)
+      o[[tn]][[i]] = e$missing(o[[tn]][[i]])
+      if (is.atomic(o[[tn]][[i]]))
+        N = max(N, length(o[[tn]][[i]]))
+      else if (is.list(o[[tn]][[i]]))
+	N = max(N, length(o[[tn]][[i]][[1]]))
+      else 
+	stop("Mixed up data types.")
     }
   }
   for (term in names(t)) {
     tn = as.character(term)
-    for (name in t[[tn]]) {
-      if (length(o[[tn]][[name]]) == 1)
-	o[[tn]][[name]] = e$extend(o[[tn]][[name]], N)
+    for (i in seq_along(t[[tn]])) {
+      if ((is.atomic(o[[tn]][[i]]) && length(o[[tn]][[i]]) == 1) ||
+          (is.list(o[[tn]][[i]])    && length(o[[tn]][[i]][[1]]) == 1)) {
+	o[[tn]][[i]] = e$extend(o[[tn]][[i]], N)
+        o[[tn]][[i]] = e$assure(o[[tn]][[i]])
+      }
     }
   }
   return(o)
