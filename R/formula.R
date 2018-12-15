@@ -422,4 +422,13 @@ expand = function(x, methods = default_expand_methods()) {
   return(x) 
 }
 
+#' Combine model sub-matrices
+combine = function(x) {
+  for (i in seq_along(x)) {
+    types = sapply(x[[i]][[j]], attr, 'type')
+    et = sapply(x[[i]][[j]], attr, 'effect_type')
+    ### COMBINE SUBTERMS ###
+  }
+  return(o) 
+}
 
