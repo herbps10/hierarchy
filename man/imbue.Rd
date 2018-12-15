@@ -4,7 +4,7 @@
 \alias{imbue}
 \title{Interpret a formula in the context of some data.}
 \usage{
-imbue(t, e, methods = hierarchy:::default_imbue_methods())
+imbue(terms, data, methods = hierarchy:::default_imbue_methods())
 }
 \arguments{
 \item{t}{LHS or RHS of 'terms' calculated by 'involves'}

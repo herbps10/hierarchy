@@ -6,6 +6,12 @@
 \usage{
 subterms(node)
 }
+\arguments{
+\item{a}{std form formula}
+}
+\value{
+formula with labelled calls to 'term' function.
+}
 \description{
-Simplify interaction terms.
+Also label what are 'term' objects
 }

@@ -6,6 +6,12 @@
 \usage{
 term_list(node)
 }
+\arguments{
+\item{node}{std-form formula}
+}
+\value{
+list with lists of calls for lhs/rhs of formula
+}
 \description{
-Terms as list
+Calls from a std-form formula
 }

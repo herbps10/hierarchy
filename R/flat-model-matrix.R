@@ -44,10 +44,10 @@ fmm_factory = methods::setRefClass(Class = "fmm",
 
       simple_formula = simplify(formula)
       std_formula = distribute(simple_formula)
-      terms = involves(formula)
+      terms = subterms(std_formula)
+      tl = term_list(terms)
       data_env = as.environment(data)
-      dependent = imbue(terms[['lhs']], data_env)
-      components = imbue(terms[['rhs']], data_env)
+      components = imbue(tl, data_env)
       simple_types = remap(components)
       submatrices = expand(simple_types)
 

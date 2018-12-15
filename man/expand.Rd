@@ -7,7 +7,7 @@
 expand(x, methods = default_expand_methods())
 }
 \arguments{
-\item{x}{result of `remap`.}
+\item{x}{result of `imbue`}
 }
 \value{
 per-term list of lists of matrices

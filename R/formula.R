@@ -123,6 +123,10 @@ simplify = function(node) {
   }
 }
 
+#' Pull out just names from a call.
+#' 
+#' @param node a call object.
+#' @return pairlist of names
 just_names = function(node) {
   if (is.name(node)) 
     return(pairlist(node))
@@ -149,6 +153,10 @@ just_names = function(node) {
 is_name = function(x) is.name(x) || is_fname(x)
 
 #' Deal with parens and interactions.
+#'
+#' Takes a simplified formula and distributes parentheses and 
+#' interactions.
+#'
 #' @export
 distribute = function(node) {
   if (is.name(node)) {
@@ -199,6 +207,11 @@ distribute = function(node) {
 }
 
 #' Simplify interaction terms.
+#'
+#' Also label what are 'term' objects
+#' 
+#' @param a std form formula
+#' @return formula with labelled calls to 'term' function.
 #' @export
 subterms = function(node) {
   if (is.name(node)) {
@@ -232,6 +245,12 @@ subterms = function(node) {
 }
 
 #' Terms as list
+#' 
+#' Calls from a std-form formula
+#' 
+#' @param node std-form formula
+#' @return list with lists of calls for lhs/rhs of formula
+#' @export
 term_list = function(node) {
   if (is.name(node) || op(node) == 'term')
     return(node)
@@ -245,16 +264,49 @@ term_list = function(node) {
   }
 }
 
+#' Append list to list without loosing attributes
+safe_append = function(l1, l2) {
+  for (item in l2) 
+    l1[[length(l1) + 1]] = item
+  return(l1)
+}
 
 merge_subterms = function(...) {
-  # deal with combining individual factors, keep
-  # covariates, where do re's come in, etc...
+  subterms = list(...)
+  subnames = as.character(args(substitute(list(...))))
+  for (i in seq_along(subterms)) {
+    type = attr(subterms[[i]], 'type')
+    if (is.null(type) && is.numeric(subterms[[i]]))
+      attr(subterms[[i]], 'type') = 'covariate'
+    else if (is.null(type) && !is.numeric(subterms[[i]]))
+      attr(subterms[[i]], 'type') = 'contrast'
+  }
+  numeric_subterms = subterms[sapply(subterms, is.numeric)]
+  factor_subterms = subterms[!sapply(subterms, is.numeric)]
+  if (length(factor_subterms) != 0) {
+    at = lapply(factor_subterms, attributes)
+    names(at) = subnames[!sapply(subterms, is.numeric)]
+    factor_subterms = do.call(paste, c(factor_subterms, list(sep = '::')))
+    factor_subterms = factor(factor_subterms)
+    lvls = attr(factor_subterms, 'levels')
+    factor_subterms = as.numeric(factor_subterms)
+    attr(factor_subterms, 'levels') = lvls
+    attr(factor_subterms, 'subterms') = at
+    subtypes = lapply(at, attr, 'type')
+    if (any(subtypes == 'random')) 
+      attr(factor_subterms, 'effect_type') = 'random'
+    if (any(subtypes == 'contrast'))
+      attr(factor_subterms, 'type') = 'contrast'
+    numeric_subterms[[length(numeric_subterms) + 1]] = factor_subterms
+  }
+  return(numeric_subterms)
 }
 
 default_imbue_methods = function() list(
   no_intercept = function() NULL,
-  intercept = function() {
-    x = 1 
+  intercept = function(x = NULL) {
+    if (is.null(x))
+      x = 1 
     attr(x, 'type') = 'intercept'
     return(x)
   },
@@ -262,45 +314,45 @@ default_imbue_methods = function() list(
     attr(x, 'type') = 'constant'
     return(x)
   },
+  contrast = function(x) {
+    attr(x, 'type') = 'contrast'
+    return(x)
+  },
+  covariate = function(x) {
+    attr(x, 'type') = 'covariate'
+    return(x)
+  },
   state = function(x) {
     attr(x, 'type') = 'state'
     return(x) 
   },
   random = function(...) {
-    x = do.call(paste, c(list(...), list(sep='::')))
+    x = lapply(list(...), as.character)
+    x = do.call(merge_subterms, x)[[1]]
     attr(x, 'type') = 'random'
-    return(x) 
-  },
-  missing = function(x) {
-    if (any(is.na(x)))
-      attr(x, 'missing') = TRUE
-    else
-      attr(x, 'missing') = FALSE
     return(x)
   },
-  assure = function(x) {
-    if (is.null(attr(x, 'type')))
-      if (is.numeric(x))
-        attr(x, 'type') = 'covariate'
-      else 
-	attr(x, 'type') = 'contrast'
-    return(x)
-  },
-  extend = function(x, N) {
-    at = attributes(x)
-    x = rep(x, N)
-    attributes(x) = at
-    return(x)
-  },
-  term = function(...) {
-    components = list(...)
-    cl = sapply(components, length)
-    N = max(cl)
-    components = lapply(components, extend, N = N)
-    term = do.call(what = mapply, c(merge_subterms, components))
-    return(term)
-  }
+  term = merge_subterms
 )
+
+tag_missing = function(x) {
+  if (any(is.na(x)))
+    attr(x, 'missing') = TRUE
+  else
+    attr(x, 'missing') = FALSE
+  return(x)
+}
+
+extend = function(x, N) {
+  if (length(x) == N)
+    return(x)
+  if (length(x) != 1)
+    stop(paste("Data length must be 1 or ", N))
+  at = attributes(x)
+  x = rep(x, N)
+  attributes(x) = at
+  return(x)
+}
 
 #' Interpret a formula in the context of some data.
 #'
@@ -309,145 +361,62 @@ default_imbue_methods = function() list(
 #' @return list with all formula terms defined from the 
 #'         environment.
 #' @export
-imbue = function(t, e, methods = hierarchy:::default_imbue_methods()) {
+imbue = function(terms, data, methods = hierarchy:::default_imbue_methods()) {
+  e = new.env()
+  for (name in names(data))
+    assign(x = name, value = data[[name]], pos = e)
   for (name in names(methods)) 
     assign(x = name, value = methods[[name]], pos = e)
   o = list()
-  N = 0
-  for (term in names(t)) {
-    tn = as.character(term)
-    o[[tn]] = list()
-    for (i in seq_along(t[[tn]])) {
-      o[[tn]][[i]] = eval(t[[tn]][[i]], e)
-      o[[tn]][[i]] = e$missing(o[[tn]][[i]])
-      if (is.atomic(o[[tn]][[i]]))
-        N = max(N, length(o[[tn]][[i]]))
-      else if (is.list(o[[tn]][[i]]))
-	N = max(N, length(o[[tn]][[i]][[1]]))
-      else 
-	stop("Mixed up data types.")
-    }
+  for (t in terms) {
+    e$subterm_names = as.character(args(t))
+    o[[length(o) + 1]] = eval(t, envir = e)
   }
-  t = o
-  o = list()
-  for (term in names(t)) {
-    tn = as.character(term)
-    o[[tn]] = list()
-    tn = as.character(term)
-    for (i in seq_along(t[[tn]])) {
-      tl = length(t[[tn]][[i]])
-      ol = length(o[[tn]])
-      if (is.list(t[[tn]][[i]])) {
-	at = attributes(t[[tn]][[i]])
-        for (j in 1:tl) {
-          o[[tn]][[ol + j]] = t[[tn]][[i]][[j]]
-	  attributes(o[[tn]][[ol + j]]) = at
-	}
-      } else {
-        o[[tn]][[ol + 1]] = t[[tn]][[i]]
-      }
-    }
-  }
-  for (term in names(o)) {
-    tn = as.character(term)
-    for (i in seq_along(o[[tn]])) {
-      if ((is.atomic(o[[tn]][[i]]) && length(o[[tn]][[i]]) == 1) ||
-          (is.list(o[[tn]][[i]])   && length(o[[tn]][[i]]) == 1)) {
-	o[[tn]][[i]] = e$extend(o[[tn]][[i]], N)
-        o[[tn]][[i]] = e$assure(o[[tn]][[i]])
-      }
-    }
-  }
+  N = max(unlist(lapply(o, function(l) sapply(l, length))))
+  for (i in seq_along(o)) 
+    for (j in seq_along(o[[i]]))
+      o[[i]][[j]] = extend(o[[i]][[j]], N)
   return(o)
 }
 
-default_remap_methods = function() list(
-  numeric = function(x) x,
-  factor = function(x) x,
-  integer = function(x) x,
-  character = function(x) {
-    at = attributes(x)
-    at[['class']] = NULL
-    x = as.factor(x)
-    attributes(x) = c(at, attributes(x))
-    return(x)
-  },
-  random = function(x) {
-    at = attributes(x)
-    at[['class']] = NULL
-    x = as.factor(x)
-    attributes(x) = c(at, attributes(x))
-    return(x)
-  },
-  logical = function(x) {
-    at = attributes(x)
-    at[['class']] = NULL
-    x = as.factor(x)
-    attributes(x) = c(at, attributes(x))
-    return(x)
-  },
-  treat_missing = function(x) {
-    at = attributes(x)
-    is_missing = is.na(x)
-    x[is_missing] = 0
-    attributes(x) = at
-    attr(x, 'is_missing') = is_missing
-    return(x)
-  }
-)
-
-#' Re-map R types to simpler math-friendly types.
-#'
-remap = function(x, methods = hierarchy:::default_remap_methods()) {
-  for (term in names(x)) {
-    tn = as.character(term)
-    for (i in seq_along(x[[tn]])) {
-      type = attr(x[[tn]][[i]], 'type')
-      if (isTRUE(attr(x[[tn]][[i]], 'missing'))) {
-	x[[tn]][[i]] = methods[['treat_missing']](x[[tn]][[i]])
-      }
-      if (isTRUE(attr(x[[tn]][[i]], 'type') == 'random')) {
-        x[[tn]][[i]] = methods[['random']](x[[tn]][[i]])
-      }
-      mode = class(x[[tn]][[i]])
-      x[[tn]][[i]] = methods[[mode]](x[[tn]][[i]])
-    }
-  }
-  return(x) 
-}
 
 default_expand_methods = function() list(
   intercept = function(x = NULL) {
     if (!is.numeric(x)) {
-      at = attributes(x) 
       contrast = contrasts(x, contrasts = FALSE, sparse = TRUE)
       x = Matrix::t(Matrix::fac2sparse(x, contrasts.arg = contrast))
     }
     return(x)
   },
-  contrats = function(x) {
-    at = attributes(x) 
+  contrast = function(x) {
     contrast = contrasts(x, contrasts = TRUE, sparse = TRUE)
     x = Matrix::t(Matrix::fac2sparse(x, contrasts.arg = contrast))
+    return(x)
   },
   constant = function(x) return(x),
+  covariate = function(x) return(x),
   random = function(x) {
-    at = attributes(x) 
     x = Matrix::t(Matrix::fac2sparse(x))
+    return(x)
   } 
 )
 
 #' Expand factors into model matrix blocks
 #' 
-#' @param x result of `remap`.
+#' @param x result of `imbue`
 #' @return per-term list of lists of matrices
+#' @export
 expand = function(x, methods = default_expand_methods()) {
-  for (term in names(x)) {
-    tn = as.character(term)
-    for (i in seq_along(x[[tn]])) {
-      cat("term: ", tn, ", i: ", i, "\n")
-      type = attr(x[[tn]][[i]], 'type')
-      x[[tn]][[i]] = methods[[type]](x[[tn]][[i]])
+  for (i in seq_along(x)) {
+    for (j in seq_along(x[[i]])) {
+      if (is.null(attr(x[[i]][[j]], 'effect_type')))
+        effect_type = 'random'
+      else
+	effect_type = 'fixed'
+      type = attr(x[[i]][[j]], 'type')
+      x[[i]][[j]] = methods[[type]](x[[i]][[j]])
+      attr(x[[i]][[j]], 'effect_type') = effect_type
+      attr(x[[i]][[j]], 'type') = type
     }
   }
   return(x) 

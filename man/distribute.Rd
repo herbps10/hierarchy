@@ -7,5 +7,6 @@
 distribute(node)
 }
 \description{
-Deal with parens and interactions.
+Takes a simplified formula and distributes parentheses and 
+interactions.
 }
