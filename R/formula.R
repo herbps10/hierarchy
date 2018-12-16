@@ -266,73 +266,170 @@ term_list = function(node) {
 
 #' Append list to list without loosing attributes
 safe_append = function(l1, l2) {
-  for (item in l2) 
+  for (i in seq_along(l2)) {
+    item = l2[[i]]
     l1[[length(l1) + 1]] = item
+    name = names(l2)[i]
+    if (length(name) != 0)
+      names(l1)[length(l1)] = name
+  }
   return(l1)
 }
 
 merge_subterms = function(...) {
   subterms = list(...)
   subnames = as.character(args(substitute(list(...))))
+  names(subterms) = subnames
   for (i in seq_along(subterms)) {
-    type = attr(subterms[[i]], 'type')
-    if (is.null(type) && is.numeric(subterms[[i]]))
-      attr(subterms[[i]], 'type') = 'covariate'
-    else if (is.null(type) && !is.numeric(subterms[[i]]))
-      attr(subterms[[i]], 'type') = 'contrast'
+    if (is.list(subterms[[i]])) {
+      subterms = safe_append(subterms, subterms[[i]])
+      subterms = subterms[-i]
+      subterms = do.call(merge_subterms, subterms) 
+    }
   }
-  numeric_subterms = subterms[sapply(subterms, is.numeric)]
-  factor_subterms = subterms[!sapply(subterms, is.numeric)]
-  if (length(factor_subterms) != 0) {
-    at = lapply(factor_subterms, attributes)
-    names(at) = subnames[!sapply(subterms, is.numeric)]
-    factor_subterms = do.call(paste, c(factor_subterms, list(sep = '::')))
-    factor_subterms = factor(factor_subterms)
-    lvls = attr(factor_subterms, 'levels')
-    factor_subterms = as.numeric(factor_subterms)
-    attr(factor_subterms, 'levels') = lvls
-    attr(factor_subterms, 'subterms') = at
-    subtypes = lapply(at, attr, 'type')
-    if (any(subtypes == 'random')) 
-      attr(factor_subterms, 'effect_type') = 'random'
-    if (any(subtypes == 'contrast'))
-      attr(factor_subterms, 'type') = 'contrast'
-    numeric_subterms[[length(numeric_subterms) + 1]] = factor_subterms
-  }
-  return(numeric_subterms)
+  return(subterms)
 }
 
 default_imbue_methods = function() list(
   no_intercept = function() NULL,
-  intercept = function(x = NULL) {
-    if (is.null(x))
-      x = 1 
-    attr(x, 'type') = 'intercept'
+  intercept = function(...) {
+    if (missing(...)) {
+      x = as.character('intercept')
+      attr(x, 'type') = 'intercept'
+      attr(x, 'effect_type') = 'fixed'
+      x = list(x)
+    } else {
+      x = do.call(merge_subterms, list(...))
+      for (i in seq_along(x)) {
+        ith_type = attr(x[[i]], 'type')
+        if (!is.null(ith_type) && ith_type != 'intercept')
+	  stop(paste0("Intercept and non-intercept terms can ",
+		     "only be combined using interactions ",
+		     "specified using the ':' operator."))
+        else if (is.null(ith_type)) 
+	  attr(x[[i]], 'type') = 'intercept'
+        ith_effect_type = attr(x[[i]], 'effect_type')
+	if (!is.null(ith_effect_type) && ith_effect_type != 'fixed')
+          stop(paste("Fixed and random-effect terms can only be ",
+		     "combined using interactions specified with the ",
+		     "':' opeartor."))
+        else
+	  attr(x[[i]], 'effect_type') = 'fixed'
+      }
+    }
     return(x)
   },
   constant = function(x) {
     attr(x, 'type') = 'constant'
+    attr(x, 'effect_type') = 'fixed'
     return(x)
   },
-  contrast = function(x) {
-    attr(x, 'type') = 'contrast'
+  contrast = function(...) {
+    if (list(...) == list()) {
+      x = list('contrast')
+      attr(x, 'type') = 'contrast'
+      attr(x, 'effect_type') = 'fixed'
+    } else {
+      x = do.call(merge_subterms, list(...))
+      for (i in seq_along(x)) {
+        ith_type = attr(x[[i]], 'type')
+        if (!is.null(ith_type) && ith_type != 'contrast')
+	  stop(paste0("Contrast and non-contrast terms can ",
+		     "only be combined using interactions ",
+		     "specified using the ':' operator."))
+        else if (is.null(ith_type)) 
+	  attr(x[[i]], 'type') = 'contrast'
+        ith_effect_type = attr(x[[i]], 'effect_type')
+	if (!is.null(ith_effect_type) && ith_effect_type != 'fixed')
+          stop(paste("Fixed and random-effect terms can only be ",
+		     "combined using interactions specified with the ",
+		     "':' opeartor."))
+        else
+          attr(x[[i]], 'effect_type') = 'fixed'
+      }
+    }
     return(x)
   },
   covariate = function(x) {
     attr(x, 'type') = 'covariate'
+    attr(x, 'effect_type') = 'fixed'
     return(x)
   },
   state = function(x) {
-    attr(x, 'type') = 'state'
+    attr(x, 'type') = 'covariate'
+    attr(x, 'effect_type') = 'fixed'
     return(x) 
   },
   random = function(...) {
-    x = lapply(list(...), as.character)
-    x = do.call(merge_subterms, x)[[1]]
-    attr(x, 'type') = 'random'
+    if (missing(...)) {
+      stop(paste("Random terms must be used with a factor",
+		 "variable."))
+    } else {
+      x = do.call(merge_subterms, list(...))
+      for (i in seq_along(x)) {
+        ith_type = attr(x[[i]], 'type')
+        if (!is.null(ith_type) && ith_type != 'intercept')
+	  stop(paste0("Intercept and non-intercept terms can ",
+		     "only be combined using interactions ",
+		     "specified using the ':' operator."))
+        else if (is.null(ith_type)) 
+	  attr(x[[i]], 'type') = 'intercept'
+        ith_effect_type = attr(x[[i]], 'effect_type')
+	if (!is.null(ith_effect_type) && ith_effect_type != 'random')
+          stop(paste("Fixed and random-effect terms can only be ",
+		     "combined using interactions specified with the ",
+		     "':' opeartor."))
+        else
+	  attr(x[[i]], 'effect_type') = 'random'
+        ith_at = attributes(x[[i]])
+	x[[i]] = as.character(x[[i]])
+	attributes(x[[i]]) = ith_at
+      }
+    }
     return(x)
   },
-  term = merge_subterms
+  random_contrast = function(...) {
+    if (missing(...)) {
+      stop(paste("Random terms must be used with a factor",
+		 "variable."))
+    } else {
+      x = do.call(merge_subterms, list(...))
+      for (i in seq_along(x)) {
+        ith_type = attr(x[[i]], 'type')
+        if (!is.null(ith_type) && ith_type != 'contrast')
+	  stop(paste0("Contrast and non-contrast terms can ",
+		     "only be combined using interactions ",
+		     "specified using the ':' operator."))
+        else if (is.null(ith_type)) 
+	  attr(x[[i]], 'type') = 'contrast'
+        ith_effect_type = attr(x[[i]], 'effect_type')
+	if (!is.null(ith_effect_type) && ith_effect_type != 'random')
+          stop(paste("Random and fixed-effect terms can only be ",
+		     "combined using interactions specified with the ",
+		     "':' opeartor."))
+        else
+          attr(x[[i]], 'effect_type') = 'random'
+        ith_at = attributes(x[[i]])
+	x[[i]] = as.character(x[[i]])
+	attributes(x[[i]]) = ith_at
+      }
+    }
+    return(x)
+  },
+  term = function(...) {
+    if (missing(...))
+      return(NULL)
+    else 
+      x = do.call(merge_subterms, list(...))
+    for (i in seq_along(x)) {
+      type = attr(x[[i]], 'type')
+      if (is.null(type) && is.numeric(x[[i]]))
+        attr(x[[i]], 'type') = 'covariate'
+      else if (is.null(type) && !is.numeric(x[[i]]))
+        attr(x[[i]], 'type') = 'contrast'
+    }
+    return(x)
+  }
 )
 
 tag_missing = function(x) {
@@ -382,21 +479,25 @@ imbue = function(terms, data, methods = hierarchy:::default_imbue_methods()) {
 
 default_expand_methods = function() list(
   intercept = function(x = NULL) {
-    if (!is.numeric(x)) {
-      contrast = contrasts(x, contrasts = FALSE, sparse = TRUE)
-      x = Matrix::t(Matrix::fac2sparse(x, contrasts.arg = contrast))
-    }
+    if (!is.factor(x))
+      x = factor(x)
+    #contrast = contrasts(x, contrasts = FALSE, sparse = TRUE)
+    x = Matrix::t(Matrix::fac2Sparse(x, factorPatt12 = c(FALSE, TRUE))[[2]])
     return(x)
   },
   contrast = function(x) {
-    contrast = contrasts(x, contrasts = TRUE, sparse = TRUE)
-    x = Matrix::t(Matrix::fac2sparse(x, contrasts.arg = contrast))
+    if (!is.factor(x))
+      x = factor(x)
+    #contrast = contrasts(x, contrasts = TRUE, sparse = TRUE)
+    x = Matrix::t(Matrix::fac2Sparse(x, factorPatt12 = c(TRUE, FALSE))[[1]])
     return(x)
   },
   constant = function(x) return(x),
   covariate = function(x) return(x),
   random = function(x) {
-    x = Matrix::t(Matrix::fac2sparse(x))
+    if (!is.factor(x))
+      x = factor(x)
+    x = Matrix::t(Matrix::fac2Sparse(x, factorPatt12 = c(FALSE, TRUE))[[2]])
     return(x)
   } 
 )
@@ -422,12 +523,24 @@ expand = function(x, methods = default_expand_methods()) {
   return(x) 
 }
 
+N_ = function(x) {
+  if (is.null(dim(x)))
+    return(length(x))
+  else
+    return(nrow(x))
+}
+
 #' Combine model sub-matrices
 combine = function(x) {
+  N = N_(x[[1]][[1]])
   for (i in seq_along(x)) {
-    types = sapply(x[[i]][[j]], attr, 'type')
-    et = sapply(x[[i]][[j]], attr, 'effect_type')
-    ### COMBINE SUBTERMS ###
+    types = sapply(x[[i]], attr, 'type')
+    et = sapply(x[[i]], attr, 'effect_type')
+    covariates = which(types %in% c('constant', 'covariate'))
+    cov_vector = rep(1, N)
+    for (j in covariates)
+      cov_vector = cov_vector * x[[i]][[j]] 
+    
   }
   return(o) 
 }
