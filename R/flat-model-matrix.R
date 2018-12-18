@@ -53,7 +53,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.components = imbue(.self$.specifiers$term_list$rhs, .self$.data)
 
       .self$.blocks = list(subterm = expand(.self$.components))
-      .self$.blocks[['term']] = combine_subterms(.self$.blocks$subterm)
+      .self$.blocks[['term']] = combine_subterms_recursive(.self$.blocks$subterm)
       .self$.model = list(
         matrix = combine_terms(.self$.blocks$term),
 	list = m_as_list(combine_terms(.self$.blocks$term))

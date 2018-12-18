@@ -277,9 +277,6 @@ call_text = function(...) sapply(substitute(list(...))[-1], deparse)
 merge_subterms = function(...) {
   dots = match.call(expand.dots = FALSE)$...
   subterms = list(...)
-  subnames = sapply(dots, deparse)
-  if (is.null(subnames))
-    print(subterms)
   names(subterms) = subnames
   for (i in seq_along(subterms)) {
     if (is.list(subterms[[i]])) {
@@ -300,8 +297,13 @@ default_imbue_methods = function() list(
       attr(x, 'effect_type') = 'fixed'
       x = list(x)
     } else {
-      x = do.call(merge_subterms, list(...))
+      x = list(...)
       for (i in seq_along(x)) {
+	if (!is.list(x[[i]]) && is.null(attr(x[[i]], 'type'))) {
+          x[[i]] = as.character(x[[i]])
+          attr(x[[i]], 'type') = 'intercept'
+          attr(x[[i]], 'effect_type') = 'fixed'
+	} 
         ith_type = attr(x[[i]], 'type')
         if (!is.null(ith_type) && ith_type != 'intercept')
 	  stop(paste0("Intercept and non-intercept terms can ",
@@ -331,8 +333,13 @@ default_imbue_methods = function() list(
       attr(x, 'type') = 'contrast'
       attr(x, 'effect_type') = 'fixed'
     } else {
-      x = do.call(merge_subterms, list(...))
+      x = list(...)
       for (i in seq_along(x)) {
+	if (!is.list(x[[i]]) && is.null(attr(x[[i]], 'type'))) {
+          x[[i]] = as.character(x[[i]])
+          attr(x[[i]], 'type') = 'contrast'
+          attr(x[[i]], 'effect_type') = 'fixed'
+	} 
         ith_type = attr(x[[i]], 'type')
         if (!is.null(ith_type) && ith_type != 'contrast')
 	  stop(paste0("Contrast and non-contrast terms can ",
@@ -366,8 +373,13 @@ default_imbue_methods = function() list(
       stop(paste("Random terms must be used with a factor",
 		 "variable."))
     } else {
-      x = do.call(merge_subterms, list(...))
+      x = list(...)
       for (i in seq_along(x)) {
+	if (!is.list(x[[i]]) && is.null(attr(x[[i]], 'type'))) {
+          x[[i]] = as.character(x[[i]])
+          attr(x[[i]], 'type') = 'intercept'
+          attr(x[[i]], 'effect_type') = 'random'
+	} 
         ith_type = attr(x[[i]], 'type')
         if (!is.null(ith_type) && ith_type != 'intercept')
 	  stop(paste0("Intercept and non-intercept terms can ",
@@ -394,8 +406,13 @@ default_imbue_methods = function() list(
       stop(paste("Random terms must be used with a factor",
 		 "variable."))
     } else {
-      x = do.call(merge_subterms, list(...))
+      x = list(...)
       for (i in seq_along(x)) {
+	if (!is.list(x[[i]]) && is.null(attr(x[[i]], 'type'))) {
+          x[[i]] = as.character(x[[i]])
+          attr(x[[i]], 'type') = 'contrast'
+          attr(x[[i]], 'effect_type') = 'random'
+	} 
         ith_type = attr(x[[i]], 'type')
         if (!is.null(ith_type) && ith_type != 'contrast')
 	  stop(paste0("Contrast and non-contrast terms can ",
@@ -420,13 +437,14 @@ default_imbue_methods = function() list(
   term = function(...) {
     if (missing(...))
       return(NULL)
-    else 
-      x = do.call(merge_subterms, list(...))
+    dots = match.call(expand.dots = FALSE)$...
+    x = list(...)
+    names(x) = dots
     for (i in seq_along(x)) {
       type = attr(x[[i]], 'type')
-      if (is.null(type) && is.numeric(x[[i]]))
+      if (!is.list(x[[i]]) && is.null(type) && is.numeric(x[[i]]))
         attr(x[[i]], 'type') = 'covariate'
-      else if (is.null(type) && !is.numeric(x[[i]]))
+      else if (!is.list(x[[i]]) && is.null(type) && !is.numeric(x[[i]]))
         attr(x[[i]], 'type') = 'contrast'
     }
     return(x)
@@ -441,15 +459,28 @@ tag_missing = function(x) {
   return(x)
 }
 
-extend = function(x, N) {
-  if (length(x) == N)
+extend_recursive = function(x, N) {
+  if (!is.list(x) && length(x) == N)
     return(x)
-  if (length(x) != 1)
+  else if (!is.list(x) && length(x) != 1)
     stop(paste("Data length must be 1 or ", N))
-  at = attributes(x)
-  x = rep(x, N)
-  attributes(x) = at
-  return(x)
+  else if (!is.list(x)) {
+    at = attributes(x)
+    x = rep(x, N)
+    attributes(x) = at
+    return(x)
+  } else {
+    return(lapply(x, extend_recursive, N))
+  }
+}
+
+N_recursive = function(x) {
+  if (!is.list(x))
+    return(length(x))
+  N = vector(mode = 'numeric', length = length(x))
+  for (i in seq_along(x))
+    N[i] = N_recursive(x[[i]])
+  return(max(N[i]))
 }
 
 #' Interpret a formula in the context of some data.
@@ -470,10 +501,8 @@ imbue = function(terms, data, methods = hierarchy:::default_imbue_methods()) {
     e$subterm_names = as.character(args(t))
     o[[length(o) + 1]] = eval(t, envir = e)
   }
-  N = max(unlist(lapply(o, function(l) sapply(l, length))))
-  for (i in seq_along(o)) 
-    for (j in seq_along(o[[i]]))
-      o[[i]][[j]] = extend(o[[i]][[j]], N)
+  N = N_recursive(o)
+  o = extend_recursive(o, N)
   return(o)
 }
 
@@ -482,14 +511,12 @@ default_expand_methods = function() list(
   intercept = function(x = NULL) {
     if (!is.factor(x))
       x = factor(x)
-    #contrast = contrasts(x, contrasts = FALSE, sparse = TRUE)
     x = Matrix::t(Matrix::fac2Sparse(x, factorPatt12 = c(FALSE, TRUE))[[2]])
     return(x)
   },
   contrast = function(x) {
     if (!is.factor(x))
       x = factor(x)
-    #contrast = contrasts(x, contrasts = TRUE, sparse = TRUE)
     x = Matrix::t(Matrix::fac2Sparse(x, factorPatt12 = c(TRUE, FALSE))[[1]])
     return(x)
   },
@@ -510,15 +537,12 @@ default_expand_methods = function() list(
 #' @export
 expand = function(x, methods = hierarchy:::default_expand_methods()) {
   for (i in seq_along(x)) {
-    for (j in seq_along(x[[i]])) {
-      if (is.null(attr(x[[i]][[j]], 'effect_type')))
-        effect_type = 'random'
-      else
-	effect_type = 'fixed'
-      type = attr(x[[i]][[j]], 'type')
-      x[[i]][[j]] = methods[[type]](x[[i]][[j]])
-      attr(x[[i]][[j]], 'effect_type') = effect_type
-      attr(x[[i]][[j]], 'type') = type
+    if (is.list(x[[i]]))
+      x[[i]] = expand(x[[i]], methods)
+    else {
+      at = attributes(x[[i]])
+      x[[i]] = methods[[at$type]](x[[i]])
+      attributes(x) = at
     }
   }
   return(x) 
@@ -531,19 +555,14 @@ N_ = function(x) {
     return(nrow(x))
 }
 
-#' Combine model sub-term sub-matrices
-#' @export
-combine_subterms = function(x) {
-  term = list()
-  for (i in seq_along(x)) {
-    term[[i]]  = column_powerset(x[[i]])
-  }
-  return(term) 
+has_list = function(x) {
+  if (!is.list(x)) 
+    stop("Should only ever be called on a list.")
+  else if (any(sapply(x, is.list)))
+    return(TRUE)
+  else 
+    return(FALSE)
 }
-
-#' Combine model term sub-matrices
-#' @export
-combine_terms = function(x) do.call(cbind, args = x)
 
 #' Create a powerset of matrices from a list.
 column_powerset = function(x) {
@@ -562,10 +581,13 @@ column_powerset = function(x) {
   k = 0
   o = Matrix::Matrix(data = 0, 
     ncol = ncol(x[[1]]) * ncol(x[[2]]), nrow = nrow(x[[1]]))
+  colnames(o) = rep('BAD', ncol(o))
   for (a in 1:ncol(x[[1]])) {
     for (b in 1:ncol(x[[2]])) {
       k = k + 1
       o[,k] = x[[1]][,a] * x[[2]][,b]
+      colnames(o)[k] = paste(colnames(x[[1]])[a], 
+			     colnames(x[[2]])[b], sep = '::')
     }
   }
   x = x[-1]
@@ -574,4 +596,29 @@ column_powerset = function(x) {
 }
 
 
+
+#' Combine model sub-term sub-matrices
+#' @export
+combine_subterms_recursive = function(x) {
+  if (!is.list(x)) 
+    stop("Should only ever be called on a list.")
+  sublists = x[sapply(x, has_list)]
+  submatrices = lapply(x[!sapply(x, has_list)], `[[`, 1)
+  if (length(submatrices) > 0) {
+    for (i in seq_along(sublists))
+      sublists[[i]] = combine_subterms_recursive(sublists[[i]])
+    submatrix_names = names(submatrices)
+    submatrix_joint = list()
+    submatrix_joint[[paste(submatrix_names, collapse = ':::')]] =
+      column_powerset(submatrices)
+    term = safe_append(sublists, submatrix_joint)
+  } else {
+    term = sublists
+  }
+  return(term) 
+}
+
+#' Combine model term sub-matrices
+#' @export
+combine_terms = function(x) do.call(cbind, args = x)
 
