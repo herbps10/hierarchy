@@ -4,7 +4,7 @@
 \alias{expand}
 \title{Expand factors into model matrix blocks}
 \usage{
-expand(x, methods = default_expand_methods())
+expand(x, methods = hierarchy:::default_expand_methods())
 }
 \arguments{
 \item{x}{result of `imbue`}

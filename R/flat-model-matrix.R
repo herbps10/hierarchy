@@ -41,41 +41,53 @@ fmm_factory = methods::setRefClass(Class = "fmm",
   methods = list(
     initialize = function(formula, data, ...) {
       "Create the implicit mass matrix and store components."
+      .self$.specifiers = list(
+	original = formula,
+	simple = simplify(formula),
+	standard = distribute(simplify(formula))
+      )
+      .self$.specifiers[['term']] = subterms(.self$.specifiers$standard)
+      .self$.specifiers[['term_list']] = term_list(.self$.specifiers$term) 
 
-      simple_formula = simplify(formula)
-      std_formula = distribute(simple_formula)
-      terms = subterms(std_formula)
-      tl = term_list(terms)
-      components = imbue(tl[['rhs']], data)
-      submatrices = expand(components)
-      mm = combine(submatrices)
+      .self$.data = as.environment(data)
+      .self$.components = imbue(.self$.specifiers$term_list$rhs, .self$.data)
 
-      .self$.matrix[['mm']] = list(mml$matrix)
-      .self$.n_row = mml$n_row
-      .self$.n_col = mml$n_col
-      .self$.n_nze = mml$n_nze
-      .self$.nze = mml$nze
-      .self$.start = mml$start
-      .self$.stop = mml$stop
-      .self$.X_vec = mml$X_vec
-      t = terms(formula)
-      pos = attr(t, 'response')
-      dn = all.vars(t)[pos]
-      .self$.y_name = dn
-      .self$.y = mml[[dn]]
+      .self$.blocks = list(subterm = expand(.self$.components))
+      .self$.blocks[['term']] = combine_subterms(.self$.blocks$subterm)
+      .self$.model = list(
+        matrix = combine_terms(.self$.blocks$term),
+	list = m_as_list(combine_terms(.self$.blocks$term))
+      )
+
+
+      # Response
+      .self$.y_name = deparse(.self$.specifiers$term_list[['lhs']])
+      .self$.y = data[[.self$.y_name]]
+
+      # Column grouping
+      .self$.term_width = sapply(.self$.blocks$term, ncol)
+      .self$.n_terms = length(.self$.term_width)
+      .self$.term_stop = cumsum(.self$.term_width)
+      .self$.term_start = c(1, .self$.term_stop[-.self$.n_terms] + 1)
+      .self$.term_names = sapply(.self$.specifiers$term_list[['rhs']], deparse)
+
+      # Group to columns    FIXME: need this
       .self$.group_columns = mml$group_columns
       .self$.group_terms = mml$group_terms
+
+      # Columns to (multiple) groups   FIXME: need this
       .self$.col_group = mml$col_group
       .self$.col_terms = mml$col_terms
       .self$.col_names = mml$names
       .self$.group_lengths = mml$group_lengths
-      .self$.re_names = mml$re_name
-      .self$.n_re = mml$n_re
-      .self$.n_re_effects = mml$n_re_effects
-      .self$.re_start = mml$re_start
-      .self$.re_stop = mml$re_stop
-      .self$.re_idx = mml$re_idx
-      .self$.data = data
+
+      # r.e. indexing.
+      .self$.random_terms = which(sapply(X = .self$.specifiers$term_list$rhs, 
+	FUN = function(x) has_(x, 'random')))
+      .self$.re_names = .self$.term_names[.self$.random_terms]
+      .self$.n_re = length(.self$.random_terms)
+      .self$.re_start = .self$.term_start[.self$.random_terms]
+      .self$.re_stop = .self$.term_stop[.self$.random_terms]
     },
     expose = function(...) {
       "Extractor that takes a named vector and provides the relevant
@@ -108,7 +120,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       return(fields)
     },
     list_terms = function() {
-      return(names(.sefl$.group_terms))
+      return(names(.self$.group_terms))
     },
     get_data = function() {
       "Get the data frame used to construct the matrix."

@@ -34,6 +34,27 @@ is_simple = function(x, simple = c('+', ':', '(')) {
     return(is_simple(lhs(x), simple) & is_simple(rhs(x), simple))
 }
 
+
+has_ = function(node, world = c(':', '+', '*', '(', '|', '~'), 
+	       name = function(x) FALSE
+) {
+  if (is.name(node) || !is.call(node))
+    return(name(node))
+  else if (any(world == func(node)))
+    return(TRUE)
+  else if (is.null(rlang::node_cdr(node)))
+    return(FALSE)
+  else {
+    have = sapply(rlang::node_cdr(node), has_, world = world, name = name)
+    for (i in seq_along(have))
+      if (have[i])
+        return(TRUE)
+  }
+  return(FALSE)
+}
+
+has_random_terms = function(x) has_(x, 'random')
+
 #' Identify interactions.
 #' 
 #' A call is an interaction if it is a simple call 
@@ -46,32 +67,6 @@ is_simple = function(x, simple = c('+', ':', '(')) {
 is_interaction = function(x) is_simple(x, c(':','('))
 
 is_fname = function(x) grepl('^[[:lower:][:upper:]][[:alnum:]]+$', x)
-
-is_operator = function(x, op =  c(':', '+', '*', '(', '|', '~')) {
-  for (operator in op)
-    if (x == operator)
-      return(TRUE)
-  return(FALSE)
-}
-
-no_operator = function(x) !is_operator(x)
-
-fails_no_test = function(node, tests = list(no_operator)) {
-  if (is.name(node))
-    return(TRUE)
-  good = TRUE
-  for (f in tests) {
-    good = good && f(rlang::node_car(node))
-    if (!is.null(rlang::node_cdr(node)))
-      good = good && fails_no_test(rlang::node_cdr(node), tests)
-  }
-  return(good)
-}
-
-has_no_operator = function(x) fails_no_test(x, tests = list(no_operator))
-has_operator = function(node, op = c(':', '+', '*', '(', '|', '~')) !is.name(node) && (
-    is_operator(rlang::node_car(node), op) || (
-    !is.null(rlang::node_cdr(node))) && has_operator(rlang::node_cdr(node)))
 
 
 #' Simplify formulas to a standard form using 
@@ -234,7 +229,7 @@ subterms = function(node) {
       call_list = do.call(c, lapply(node, just_names))
       return(as.call(call_list))
     }
-  } else if (!has_operator(node, '+') && func(node) != 'term') {
+  } else if (!has_(node, '+') && func(node) != 'term') {
     return(subterms(call('term', node)))
   } else if (op(node) == '+') {
       return(call('+', subterms(lhs(node)), subterms(rhs(node))))
@@ -276,9 +271,15 @@ safe_append = function(l1, l2) {
   return(l1)
 }
 
+call_text = function(...) sapply(substitute(list(...))[-1], deparse)
+
+#' Fixme
 merge_subterms = function(...) {
+  dots = match.call(expand.dots = FALSE)$...
   subterms = list(...)
-  subnames = as.character(args(substitute(list(...))))
+  subnames = sapply(dots, deparse)
+  if (is.null(subnames))
+    print(subterms)
   names(subterms) = subnames
   for (i in seq_along(subterms)) {
     if (is.list(subterms[[i]])) {
@@ -507,7 +508,7 @@ default_expand_methods = function() list(
 #' @param x result of `imbue`
 #' @return per-term list of lists of matrices
 #' @export
-expand = function(x, methods = default_expand_methods()) {
+expand = function(x, methods = hierarchy:::default_expand_methods()) {
   for (i in seq_along(x)) {
     for (j in seq_along(x[[i]])) {
       if (is.null(attr(x[[i]][[j]], 'effect_type')))
@@ -530,18 +531,47 @@ N_ = function(x) {
     return(nrow(x))
 }
 
-#' Combine model sub-matrices
-combine = function(x) {
-  N = N_(x[[1]][[1]])
+#' Combine model sub-term sub-matrices
+#' @export
+combine_subterms = function(x) {
+  term = list()
   for (i in seq_along(x)) {
-    types = sapply(x[[i]], attr, 'type')
-    et = sapply(x[[i]], attr, 'effect_type')
-    covariates = which(types %in% c('constant', 'covariate'))
-    cov_vector = rep(1, N)
-    for (j in covariates)
-      cov_vector = cov_vector * x[[i]][[j]] 
-    
+    term[[i]]  = column_powerset(x[[i]])
   }
-  return(o) 
+  return(term) 
 }
+
+#' Combine model term sub-matrices
+#' @export
+combine_terms = function(x) do.call(cbind, args = x)
+
+#' Create a powerset of matrices from a list.
+column_powerset = function(x) {
+  if (missing(x))
+    stop("Missing input to 'column powerset'.")
+  if (!is.list(x))
+    stop("Input to 'column_powerset' must be a list.")
+  if (!isTRUE(all(sapply(x, function(x) {
+    isTRUE(is.matrix(x)) || class(x) == 'dgCMatrix'
+    }))))
+    stop("Input to 'column_powerset' must be a list of matrices.")
+  if (!isTRUE(all(sapply(x, function(x, ref) nrow(x) == ref, ref = nrow(x[[1]])))))
+    stop("Inputs to 'column_powerset' must all have the same number of rows.")
+  if (length(x) == 1)
+    return(x[[1]])
+  k = 0
+  o = Matrix::Matrix(data = 0, 
+    ncol = ncol(x[[1]]) * ncol(x[[2]]), nrow = nrow(x[[1]]))
+  for (a in 1:ncol(x[[1]])) {
+    for (b in 1:ncol(x[[2]])) {
+      k = k + 1
+      o[,k] = x[[1]][,a] * x[[2]][,b]
+    }
+  }
+  x = x[-1]
+  x = x[-1]
+  return(column_powerset(c(list(o), x)))
+}
+
+
 
