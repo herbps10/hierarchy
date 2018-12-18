@@ -15,10 +15,7 @@
 #' @export
 formulate = function(
   models = list(),
-  data,
-  constants = NULL,
-  states = NULL,
-  drop = NULL
+  data
 ) {
 
   response_names = sapply(models, hierarchy:::extract_response_name)
@@ -32,23 +29,8 @@ formulate = function(
 
   mm_objs = list()
   for (name in response_names) {
-    if (!is.null(states) && name %in% names(states)) {
-      for (sname in states[[name]]) {
-        if (!(sname %in% names(data)))
-	  data[[sname]] = 1
-	else
-	  stop("States must not also be data.")
-      }
-    }
-    if (!is.null(constants) && name %in% names(constants)) {
-      for (cname in constants[[name]]) {
-	if (!(cname %in% names(data)))
-          data[[cname]] = 1
-      }
-    }
     mm_objs[[name]] = hierarchy:::fmm_factory(
-      formula = models[[name]], data = data, 
-      drop = drop)
+      formula = models[[name]], data = data)
   }
 
   # These are all the parts we need to pull out from the model matrix
@@ -59,14 +41,6 @@ formulate = function(
   for (name in response_names) {
     names(expose_components) = paste(name, expose_components, sep='_')
     submodel_inputs = do.call(mm_objs[[name]]$expose, as.list(expose_components))
-    submodel_group_columns = list("col_terms")
-    if (!is.null(constants)) {
-      cnames = constants[[name]]
-      ccol = unlist(mm_objs[[name]]$expose("group_columns")[['group_columns']][cnames])
-      submodel_inputs[[paste(name, 'n_constants')]] = length(ccol)
-      submodel_inputs[[paste(name, 'constants', sep='_')]] = ccol
-      submodel_inputs[[paste(name, 'constant_values', sep='_')]] = data[[cnames]]
-    }
     model_inputs[[name]] =  submodel_inputs
   }
 

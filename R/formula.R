@@ -364,8 +364,10 @@ default_imbue_methods = function() list(
     return(x)
   },
   state = function(x) {
+    x = 1
     attr(x, 'type') = 'covariate'
     attr(x, 'effect_type') = 'fixed'
+    attr(x, 'model') = 'state'
     return(x) 
   },
   random = function(...) {
@@ -447,6 +449,7 @@ default_imbue_methods = function() list(
       else if (!is.list(x[[i]]) && is.null(type) && !is.numeric(x[[i]]))
         attr(x[[i]], 'type') = 'contrast'
     }
+    attr(x, 'mode') = 'term'
     return(x)
   }
 )
@@ -564,8 +567,23 @@ has_list = function(x) {
     return(FALSE)
 }
 
+has_subterm_matrix = function(x) {
+  if (!is.list(x)) 
+    stop("Should only ever be called on a list.")
+  else 
+    return(sapply(x, function(item) {
+      if (is.matrix(item[[1]]))
+	return(TRUE)
+      else if (class(item[[1]]) == 'dgCMatrix')
+        return(TRUE)
+      else
+	return(FALSE)
+    }))
+}
+
 #' Create a powerset of matrices from a list.
 column_powerset = function(x) {
+  z = x
   if (missing(x))
     stop("Missing input to 'column powerset'.")
   if (!is.list(x))
@@ -579,43 +597,63 @@ column_powerset = function(x) {
   if (length(x) == 1)
     return(x[[1]])
   k = 0
-  o = Matrix::Matrix(data = 0, 
-    ncol = ncol(x[[1]]) * ncol(x[[2]]), nrow = nrow(x[[1]]))
+  o = Matrix::Matrix(
+    data = as.numeric(rep(NA, ncol(x[[1]]) * ncol(x[[2]]) * nrow(x[[1]]))), 
+    ncol = ncol(x[[1]]) * ncol(x[[2]]), nrow = nrow(x[[1]]),
+    sparse = TRUE)
+  o = as(o, 'dgCMatrix')
   colnames(o) = rep('BAD', ncol(o))
   for (a in 1:ncol(x[[1]])) {
     for (b in 1:ncol(x[[2]])) {
       k = k + 1
-      o[,k] = x[[1]][,a] * x[[2]][,b]
+      o[,k] = x[[1]][,a,drop=FALSE] * x[[2]][,b,drop=FALSE]
       colnames(o)[k] = paste(colnames(x[[1]])[a], 
 			     colnames(x[[2]])[b], sep = '::')
     }
   }
   x = x[-1]
   x = x[-1]
-  return(column_powerset(c(list(o), x)))
+  if (any(colnames(o) == 'BAD'))
+    stop("Column names not transferred.")
+  if (length(x) == 0)
+    return(o)
+  else 
+    return(column_powerset(c(list(o), x)))
 }
 
+
+combine_subterms_recursive = function(x) {
+  submatrices = sapply(x[has_subterm_matrix(x)], `[[`, 1)
+  remainder = x[!has_subterm_matrix(x)]
+  submatrix_joint = list()
+  if (length(submatrices) > 1) {
+    submatrix_names = names(submatrices)
+    submatrix_joint[[paste(submatrix_names, collapse = ':::')]] =
+      column_powerset(submatrices)
+  } else if (length(submatrices) == 1) {
+    submatrix_names = names(submatrices[[1]])
+    submatrix_joint[[paste(submatrix_names, collapse = ':::')]] = submatrices[[1]]
+  }
+  if (length(remainder) > 0) {
+    remainder = lapply(remainder, combine_subterms_recursive)
+    term = safe_append(remainder, submatrix_joint)
+    return(combine_subterms_recursive(term))
+  } else {
+    return(submatrix_joint)
+  }
+}
 
 
 #' Combine model sub-term sub-matrices
 #' @export
-combine_subterms_recursive = function(x) {
-  if (!is.list(x)) 
-    stop("Should only ever be called on a list.")
-  sublists = x[sapply(x, has_list)]
-  submatrices = lapply(x[!sapply(x, has_list)], `[[`, 1)
-  if (length(submatrices) > 0) {
-    for (i in seq_along(sublists))
-      sublists[[i]] = combine_subterms_recursive(sublists[[i]])
-    submatrix_names = names(submatrices)
-    submatrix_joint = list()
-    submatrix_joint[[paste(submatrix_names, collapse = ':::')]] =
-      column_powerset(submatrices)
-    term = safe_append(sublists, submatrix_joint)
-  } else {
-    term = sublists
-  }
-  return(term) 
+combine_subterms = function(x) {
+  x = lapply(x, combine_subterms_recursive)
+  if (any(sapply(x, length) > 1))
+    warning("Not succesfully combined.")
+  o = list()
+  for (i in seq_along(x))
+    o[[names(x[[i]])]] = x[[i]][[1]]
+  return(o)
 }
 
 #' Combine model term sub-matrices

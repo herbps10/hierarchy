@@ -4,8 +4,7 @@
 \alias{formulate}
 \title{Create setting for a model matrix}
 \usage{
-formulate(models = list(), data, constants = NULL, states = NULL,
-  drop = NULL)
+formulate(models = list(), data)
 }
 \arguments{
 \item{models, }{a list of formulas.  One formula per}

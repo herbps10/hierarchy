@@ -10,6 +10,7 @@ st = function(m) Matrix::Matrix(t(as.matrix(m)))
 #'
 #' @param MatrixModels::model.Matrix object
 #' @return list with model matrix components and labels
+#' @export
 m_as_list = function(m) {
   ## Calculate matrix entries
   nze = apply(m, 1, function(x) which(x != 0))

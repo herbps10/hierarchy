@@ -72,14 +72,14 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.term_names = sapply(.self$.specifiers$term_list[['rhs']], deparse)
 
       # Group to columns    FIXME: need this
-      .self$.group_columns = mml$group_columns
-      .self$.group_terms = mml$group_terms
+      #.self$.group_columns = mml$group_columns
+      #.self$.group_terms = mml$group_terms
 
       # Columns to (multiple) groups   FIXME: need this
-      .self$.col_group = mml$col_group
-      .self$.col_terms = mml$col_terms
-      .self$.col_names = mml$names
-      .self$.group_lengths = mml$group_lengths
+      #.self$.col_group = mml$col_group
+      #.self$.col_terms = mml$col_terms
+      #.self$.col_names = mml$names
+      #.self$.group_lengths = mml$group_lengths
 
       # r.e. indexing.
       .self$.random_terms = which(sapply(X = .self$.specifiers$term_list$rhs, 
