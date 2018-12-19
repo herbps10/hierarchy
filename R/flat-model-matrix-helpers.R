@@ -26,16 +26,16 @@ m_as_list = function(m) {
   stop = cumsum(stop)
   start = c(1, stop[1:(N-1)] + 1)
   nze = unlist(nze)
-  X_vec = apply(m, 1, function(x) x[x != 0])
-  if (is.matrix(X_vec))
-    X_vec = as.vector(X_vec)
+  xv = apply(m, 1, function(x) x[x != 0])
+  if (is.matrix(xv))
+    xv = as.vector(xv)
   m_list_form = list(
     n_row = N, 
     n_col = ncol(m),
     n_nze = length(nze),
     nze = nze,
     start = start, stop = stop,
-    X_vec = unlist(X_vec)
+    xv = unlist(xv)
   )
   return(m_list_form)
 }

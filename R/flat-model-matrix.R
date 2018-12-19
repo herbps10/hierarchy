@@ -7,9 +7,9 @@
 #' @field .nze indexes of non-zero entries in the model matrix (RSC)
 #' @field .start where each row of the model matrix start in nze
 #' @field .stop where each row of the model matrix ends in nze
-#' @field .X_vec n_nze nze entries of the model matrix 
+#' @field .xv n_nze nze entries of the model matrix 
 #' @field .y dependent data vector, if applicable
-#' @field .groups index into X_vec for each group of parameters produced by the formula
+#' @field .groups index into xv for each group of parameters produced by the formula
 #' @export fmm_factory
 #' @exportClass fmm
 fmm_factory = methods::setRefClass(Class = "fmm",
@@ -25,7 +25,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .nze = "numeric",
     .start = "numeric",
     .stop = "numeric",
-    .X_vec = "numeric",
+    .xv = "numeric",
     .y_name = "character",
     .y = "list",
     .term_width = "numeric",
@@ -76,7 +76,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.nze = .model$list$nze
       .self$.start = .model$list$start
       .self$.stop = .model$list$stop
-      .self$.X_vec = .model$list$X_vec
+      .self$.xv = .model$list$xv
 
       # Response
       .self$.y_name = deparse(.self$.specifiers$term_list['lhs'])
@@ -185,7 +185,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       stop = .self$.stop
       o = list()
       for (i in 1:length(component))
-        o[[c]] = .self$.X_vec[start[i]:stop[i]]
+        o[[c]] = .self$.xv[start[i]:stop[i]]
       return(o)
     },
     groups = function(component = NULL) {
