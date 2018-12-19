@@ -18,7 +18,7 @@ formulate = function(
   data
 ) {
 
-  response_names = sapply(models, hierarchy:::extract_response_name)
+  response_names = as.character(sapply(models, hierarchy:::response_name))
   for (name in response_names) {
     if (name %in% names(data))
       next

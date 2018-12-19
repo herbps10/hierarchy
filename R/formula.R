@@ -66,7 +66,7 @@ has_random_terms = function(x) has_(x, 'random')
 #' @return TRUE iff the call is an interaction.
 is_interaction = function(x) is_simple(x, c(':','('))
 
-is_fname = function(x) grepl('^[[:lower:][:upper:]][[:alnum:]]+$', x)
+is_fname = function(x) grepl('^[[:lower:][:upper:]][[:alnum:]_]+$', x)
 
 
 #' Simplify formulas to a standard form using 
@@ -123,22 +123,25 @@ simplify = function(node) {
 #' @param node a call object.
 #' @return pairlist of names
 just_names = function(node) {
-  if (is.name(node)) 
-    return(pairlist(node))
-  else if (is_fname(op(node)) &&  is.null(rlang::node_cdr(node))) {
+  if (is.pairlist(node)) {
+    call_list = unlist(lapply(node, just_names))
+    return(call_list)
+  } else if (is.name(node)) {
+    return(node)
+  } else if (is_fname(op(node)) &&  is.null(rlang::node_cdr(node))) {
     return(node)
   } else if (is_fname(op(node)) && !is.null(rlang::node_cdr(node))) {
     arguments = rlang::node_cdr(node)
     if (length(arguments) == 0 || all(sapply(arguments, is.name))) {
       return(node)
     } else {
-      call_list = do.call(c, lapply(node, just_names))
-      return(as.call(call_list))
+      call_list = c(as.character(op(node)), unlist(lapply(arguments, just_names)))
+      return(do.call(call, call_list))
     }
   } else if (is_fname(op(node)))
-    return(pairlist(op(node)))
+    return(op(node))
   else if (op(node) == '(')
-    return(pairlist(just_names(arg(node))))
+    return(just_names(arg(node)))
   else if (op(node) == ':')
     return(c(just_names(lhs(node)), just_names(rhs(node))))
   else
@@ -154,7 +157,7 @@ is_name = function(x) is.name(x) || is_fname(x)
 #'
 #' @export
 distribute = function(node) {
-  if (is.name(node)) {
+  if (is.name(node) || !has_(node)) {
     return(node)
   } else if (op(node) == '~') {
     return(call('~', distribute(lhs(node)), distribute(rhs(node))))
@@ -192,8 +195,7 @@ distribute = function(node) {
     if (length(arguments) == 0 || all(sapply(arguments, is.name))) {
       return(node)
     } else {
-      call_list = do.call(c, lapply(node, just_names))
-      return(as.call(call_list))
+      return(just_names(node))
     }
   } else {
     warning("incomplete")
@@ -201,41 +203,42 @@ distribute = function(node) {
   }
 }
 
-#' Simplify interaction terms.
-#'
-#' Also label what are 'term' objects
+#' Label 'term' objects
 #' 
 #' @param a std form formula
 #' @return formula with labelled calls to 'term' function.
 #' @export
 subterms = function(node) {
-  if (is.name(node)) {
-    return(node)
-  } else if (is_fname(op(node)) && length(node) == 1 &&
-	     op(node) != 'term') {
-    return(call('term', node))
-  } else if (is_fname(op(node)) && length(node) == 1) {
-    return(node)
-  } else if (is_fname(op(node)) && length(node) == 2 &&
-             is.call(arg(node)) && op(node) != 'term') {
-    return(call('term', subterms(node)))
-  } else if (op(node) == '~') {
-    return(call('~', subterms(lhs(node)), subterms(rhs(node))))
-  } else if (is_fname(func(node))) {
-    arguments = rlang::node_cdr(node)
-    if (length(arguments) == 0 || all(sapply(arguments, is.name))) {
-      return(node)
-    } else {
-      call_list = do.call(c, lapply(node, just_names))
-      return(as.call(call_list))
-    }
-  } else if (!has_(node, '+') && func(node) != 'term') {
-    return(subterms(call('term', node)))
-  } else if (op(node) == '+') {
-      return(call('+', subterms(lhs(node)), subterms(rhs(node))))
+  if (is_fname(func(node)) && !has_(node, c('+', '~', '*', '|'))) {
+    return(just_names(node))
+  } else if (op(node) == '+' || op(node) == '~') {
+      if (is.name(lhs(node)) || !has_(lhs(node), '+')) {
+	#node_lhs = call('term', lhs(node))
+	node_lhs = as.call(c(quote(term), just_names(lhs(node))))
+      } else {
+	node_lhs = subterms(lhs(node))
+      }
+      if (is.name(rhs(node)) || !has_(rhs(node), '+')) {
+	#node_rhs = call('term', rhs(node))
+	node_rhs = as.call(c(quote(term), just_names(rhs(node))))
+      } else {
+	node_rhs = subterms(rhs(node))
+      }
+      return(call(as.character(op(node)), node_lhs, node_rhs))
   } else {
     warning("incomplete")
     return(node)
+  }
+}
+
+subterm_arguments = function(node) {
+  if (op(node) == 'term') {
+    arg_names = just_names(args(node))
+    return(do.call(call, c(list('term'), enquote(arg_names))))
+  } else if (op(node) == '+' || op(node) == '~') {
+    return(call(as.character(op(node)), subterm_arguments(lhs(node)), subterm_arguments(rhs(node))))
+  } else if (op(node) == ':') {
+
   }
 }
 
@@ -247,7 +250,7 @@ subterms = function(node) {
 #' @return list with lists of calls for lhs/rhs of formula
 #' @export
 term_list = function(node) {
-  if (is.name(node) || op(node) == 'term')
+  if (!has_(node) || op(node) == 'term')
     return(node)
   else if (op(node) == '~') 
     return(list(lhs = term_list(lhs(node)), rhs = term_list(rhs(node))))
@@ -273,20 +276,6 @@ safe_append = function(l1, l2) {
 
 call_text = function(...) sapply(substitute(list(...))[-1], deparse)
 
-#' Fixme
-merge_subterms = function(...) {
-  dots = match.call(expand.dots = FALSE)$...
-  subterms = list(...)
-  names(subterms) = subnames
-  for (i in seq_along(subterms)) {
-    if (is.list(subterms[[i]])) {
-      subterms = safe_append(subterms, subterms[[i]])
-      subterms = subterms[-i]
-      subterms = do.call(merge_subterms, subterms) 
-    }
-  }
-  return(subterms)
-}
 
 default_imbue_methods = function() list(
   no_intercept = function() NULL,
@@ -295,9 +284,10 @@ default_imbue_methods = function() list(
       x = as.character('intercept')
       attr(x, 'type') = 'intercept'
       attr(x, 'effect_type') = 'fixed'
-      x = list(x)
     } else {
+      dots = match.call(expand.dots = FALSE)$...
       x = list(...)
+      names(x) = dots
       for (i in seq_along(x)) {
 	if (!is.list(x[[i]]) && is.null(attr(x[[i]], 'type'))) {
           x[[i]] = as.character(x[[i]])
@@ -329,9 +319,7 @@ default_imbue_methods = function() list(
   },
   contrast = function(...) {
     if (list(...) == list()) {
-      x = list('contrast')
-      attr(x, 'type') = 'contrast'
-      attr(x, 'effect_type') = 'fixed'
+      return(NULL)
     } else {
       x = list(...)
       for (i in seq_along(x)) {
@@ -375,7 +363,9 @@ default_imbue_methods = function() list(
       stop(paste("Random terms must be used with a factor",
 		 "variable."))
     } else {
+      dots = match.call(expand.dots = FALSE)$...
       x = list(...)
+      names(x) = dots
       for (i in seq_along(x)) {
 	if (!is.list(x[[i]]) && is.null(attr(x[[i]], 'type'))) {
           x[[i]] = as.character(x[[i]])
@@ -399,6 +389,7 @@ default_imbue_methods = function() list(
         ith_at = attributes(x[[i]])
 	x[[i]] = as.character(x[[i]])
 	attributes(x[[i]]) = ith_at
+        x[[names(x)[i]]] = list(x[[i]])
       }
     }
     return(x)
@@ -408,7 +399,9 @@ default_imbue_methods = function() list(
       stop(paste("Random terms must be used with a factor",
 		 "variable."))
     } else {
+      dots = match.call(expand.dots = FALSE)$...
       x = list(...)
+      names(x) = dots
       for (i in seq_along(x)) {
 	if (!is.list(x[[i]]) && is.null(attr(x[[i]], 'type'))) {
           x[[i]] = as.character(x[[i]])
@@ -441,13 +434,21 @@ default_imbue_methods = function() list(
       return(NULL)
     dots = match.call(expand.dots = FALSE)$...
     x = list(...)
+    nulls = which(sapply(x, is.null))
+    if (length(nulls) != 0) 
+      for (null in nulls)
+        x[[null]] = NULL
+    if (length(x) == 0 || length(nulls) == length(x))
+      return(NULL)
     names(x) = dots
     for (i in seq_along(x)) {
       type = attr(x[[i]], 'type')
       if (!is.list(x[[i]]) && is.null(type) && is.numeric(x[[i]]))
         attr(x[[i]], 'type') = 'covariate'
-      else if (!is.list(x[[i]]) && is.null(type) && !is.numeric(x[[i]]))
+      else if (!is.list(x[[i]]) && is.null(type) && 
+	       (is.character(x[[i]]) || is.factor(x[[i]])))
         attr(x[[i]], 'type') = 'contrast'
+      x[[names(x)[i]]] = x[[i]]
     }
     attr(x, 'mode') = 'term'
     return(x)
@@ -501,8 +502,9 @@ imbue = function(terms, data, methods = hierarchy:::default_imbue_methods()) {
     assign(x = name, value = methods[[name]], pos = e)
   o = list()
   for (t in terms) {
-    e$subterm_names = as.character(args(t))
+    term_name = deparse(t, width.cutoff = 200L)
     o[[length(o) + 1]] = eval(t, envir = e)
+    names(o)[length(o)] = term_name
   }
   N = N_recursive(o)
   o = extend_recursive(o, N)
@@ -523,8 +525,14 @@ default_expand_methods = function() list(
     x = Matrix::t(Matrix::fac2Sparse(x, factorPatt12 = c(TRUE, FALSE))[[1]])
     return(x)
   },
-  constant = function(x) return(x),
-  covariate = function(x) return(x),
+  constant = function(x) {
+    x = Matrix::Matrix(data = x, ncol = 1)
+    return(x)
+  },
+  covariate = function(x) {
+    x = Matrix::Matrix(data = x, ncol = 1)
+    return(x)
+  },
   random = function(x) {
     if (!is.factor(x))
       x = factor(x)
@@ -543,9 +551,11 @@ expand = function(x, methods = hierarchy:::default_expand_methods()) {
     if (is.list(x[[i]]))
       x[[i]] = expand(x[[i]], methods)
     else {
-      at = attributes(x[[i]])
-      x[[i]] = methods[[at$type]](x[[i]])
-      attributes(x) = at
+      type = attr(x[[i]], 'type') 
+      effect_type = attr(x[[i]], 'effect_type')
+      x[[i]] = methods[[type]](x[[i]])
+      attr(x[[i]], 'type') = type
+      attr(x[[i]], 'effect_type') = effect_type
     }
   }
   return(x) 
@@ -558,14 +568,6 @@ N_ = function(x) {
     return(nrow(x))
 }
 
-has_list = function(x) {
-  if (!is.list(x)) 
-    stop("Should only ever be called on a list.")
-  else if (any(sapply(x, is.list)))
-    return(TRUE)
-  else 
-    return(FALSE)
-}
 
 has_subterm_matrix = function(x) {
   if (!is.list(x)) 
@@ -576,6 +578,8 @@ has_subterm_matrix = function(x) {
 	return(TRUE)
       else if (class(item[[1]]) == 'dgCMatrix')
         return(TRUE)
+      else if (class(item[[1]]) == 'dgeMatrix')
+	return(TRUE)
       else
 	return(FALSE)
     }))
@@ -583,13 +587,12 @@ has_subterm_matrix = function(x) {
 
 #' Create a powerset of matrices from a list.
 column_powerset = function(x) {
-  z = x
   if (missing(x))
     stop("Missing input to 'column powerset'.")
   if (!is.list(x))
     stop("Input to 'column_powerset' must be a list.")
   if (!isTRUE(all(sapply(x, function(x) {
-    isTRUE(is.matrix(x)) || class(x) == 'dgCMatrix'
+    isTRUE(is.matrix(x)) || class(x) == 'dgCMatrix' || class(x) == 'dgeMatrix'
     }))))
     stop("Input to 'column_powerset' must be a list of matrices.")
   if (!isTRUE(all(sapply(x, function(x, ref) nrow(x) == ref, ref = nrow(x[[1]])))))
@@ -621,6 +624,21 @@ column_powerset = function(x) {
     return(column_powerset(c(list(o), x)))
 }
 
+subterm_types = function(x) {
+  if (is.matrix(x))
+    return("matrix")
+  else if (class(x) == 'dgCMatrix')
+    return("matrix")
+  else if (class(x) == 'dgeMatrix')
+    return("matrix")
+  else if (is.list(x) && is.null(names(x)))
+    return ("group")
+  else if (is.list(x) && !is.null(names(x)))
+    return("named")
+  else
+    return("unknown")
+}
+  
 
 combine_subterms_recursive = function(x) {
   submatrices = sapply(x[has_subterm_matrix(x)], `[[`, 1)
@@ -647,12 +665,16 @@ combine_subterms_recursive = function(x) {
 #' Combine model sub-term sub-matrices
 #' @export
 combine_subterms = function(x) {
-  x = lapply(x, combine_subterms_recursive)
+  for (i in seq_along(x)) {
+    x[[i]] = combine_subterms_recursive(x[[i]])
+  }
   if (any(sapply(x, length) > 1))
     warning("Not succesfully combined.")
   o = list()
-  for (i in seq_along(x))
+  for (i in seq_along(x)) {
     o[[names(x[[i]])]] = x[[i]][[1]]
+    print(names(x[[i]]))
+  }
   return(o)
 }
 

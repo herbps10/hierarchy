@@ -14,6 +14,10 @@
 #' @exportClass fmm
 fmm_factory = methods::setRefClass(Class = "fmm",
   fields = list(
+    .specifiers = "list",
+    .components = "list",
+    .blocks = "list",
+    .model = "list",
     .matrix = "list",
     .n_row = "numeric",
     .n_col = "numeric",
@@ -23,20 +27,26 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .stop = "numeric",
     .X_vec = "numeric",
     .y_name = "character",
-    .y = "numeric",
+    .y = "list",
+    .term_width = "numeric",
+    .n_terms = "numeric",
+    .term_start = "numeric",
+    .term_stop = "numeric",
+    .term_names = "character",
     .group_columns = "list",
     .group_terms = "list",
     .col_group = "character",
     .col_terms = "list",
     .col_names = "character",
     .group_lengths = "list",
+    .random_terms = "numeric",
     .re_names = "character",
     .n_re = "numeric",
     .n_re_effects = "numeric",
     .re_start = "numeric",
     .re_stop = "numeric",
     .re_idx = "numeric",
-    .data = "data.frame"
+    .data = "environment"
   ),
   methods = list(
     initialize = function(formula, data, ...) {
@@ -53,16 +63,24 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.components = imbue(.self$.specifiers$term_list$rhs, .self$.data)
 
       .self$.blocks = list(subterm = expand(.self$.components))
-      .self$.blocks[['term']] = combine_subterms_recursive(.self$.blocks$subterm)
+      .self$.blocks[['term']] = combine_subterms(.self$.blocks$subterm)
       .self$.model = list(
         matrix = combine_terms(.self$.blocks$term),
 	list = m_as_list(combine_terms(.self$.blocks$term))
       )
 
+      .self$.n_row = nrow(.model$matrix)
+      .self$.n_col = ncol(.model$matrix)
+      .self$.n_nze = .model$list$n_nze
+      .self$.nze = .model$list$nze
+      .self$.start = .model$list$start
+      .self$.stop = .model$list$stop
+      .self$.X_vec = .model$list$X_vec
 
       # Response
-      .self$.y_name = deparse(.self$.specifiers$term_list[['lhs']])
-      .self$.y = data[[.self$.y_name]]
+      .self$.y_name = deparse(.self$.specifiers$term_list['lhs'])
+      .self$.y = .self$.components = imbue(.self$.specifiers$term_list['lhs'], 
+					   .self$.data)
 
       # Column grouping
       .self$.term_width = sapply(.self$.blocks$term, ncol)
