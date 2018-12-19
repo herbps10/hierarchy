@@ -35,7 +35,7 @@ formulate = function(
 
   # These are all the parts we need to pull out from the model matrix
   expose_components = c("n_nze", "n_col", "start", "stop", "nze",
-    "n_re", "n_re_effects", "re_start", "re_stop", "re_idx", "xv")
+    "n_re", "re_start", "re_stop", "xv")
 
   model_inputs = list()
   for (name in response_names) {
