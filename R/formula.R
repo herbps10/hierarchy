@@ -506,7 +506,7 @@ imbue = function(terms, data, methods = hierarchy:::default_imbue_methods()) {
     o[[length(o) + 1]] = eval(t, envir = e)
     names(o)[length(o)] = term_name
   }
-  N = N_recursive(o)
+  N = e$N
   o = extend_recursive(o, N)
   return(o)
 }
@@ -569,22 +569,6 @@ N_ = function(x) {
 }
 
 
-has_subterm_matrix = function(x) {
-  if (!is.list(x)) 
-    stop("Should only ever be called on a list.")
-  else 
-    return(sapply(x, function(item) {
-      if (is.matrix(item[[1]]))
-	return(TRUE)
-      else if (class(item[[1]]) == 'dgCMatrix')
-        return(TRUE)
-      else if (class(item[[1]]) == 'dgeMatrix')
-	return(TRUE)
-      else
-	return(FALSE)
-    }))
-}
-
 #' Create a powerset of matrices from a list.
 column_powerset = function(x) {
   if (missing(x))
@@ -624,41 +608,44 @@ column_powerset = function(x) {
     return(column_powerset(c(list(o), x)))
 }
 
-subterm_types = function(x) {
-  if (is.matrix(x))
-    return("matrix")
-  else if (class(x) == 'dgCMatrix')
-    return("matrix")
-  else if (class(x) == 'dgeMatrix')
-    return("matrix")
-  else if (is.list(x) && is.null(names(x)))
-    return ("group")
-  else if (is.list(x) && !is.null(names(x)))
-    return("named")
-  else
-    return("unknown")
-}
   
+is_matrix = function(x) is.matrix(x) || 
+  class(x) %in% c('dgCMatrix', 'dgeMatrix')
+
+has_matrix = function(x) {
+  if (!is.list(x) || length(x) != 1) 
+    stop("Should only ever be called on a length-1 list.")
+  else {
+      if (is.matrix(item[[1]]))
+	return(TRUE)
+      else if (class(item[[1]]) == 'dgCMatrix')
+        return(TRUE)
+      else if (class(item[[1]]) == 'dgeMatrix')
+	return(TRUE)
+      else
+	return(FALSE)
+  }
+}
 
 combine_subterms_recursive = function(x) {
-  submatrices = sapply(x[has_subterm_matrix(x)], `[[`, 1)
-  remainder = x[!has_subterm_matrix(x)]
-  submatrix_joint = list()
-  if (length(submatrices) > 1) {
-    submatrix_names = names(submatrices)
-    submatrix_joint[[paste(submatrix_names, collapse = ':::')]] =
-      column_powerset(submatrices)
-  } else if (length(submatrices) == 1) {
-    submatrix_names = names(submatrices[[1]])
-    submatrix_joint[[paste(submatrix_names, collapse = ':::')]] = submatrices[[1]]
-  }
-  if (length(remainder) > 0) {
-    remainder = lapply(remainder, combine_subterms_recursive)
-    term = safe_append(remainder, submatrix_joint)
-    return(combine_subterms_recursive(term))
+  if (is_matrix(x))
+    return(x)
+  else if (is.list(x) && all(sapply(x, is_matrix)))
+    return(column_powerset(x))
+  else if (is.list(x)) { 
+    for (i in seq_along(x)) {
+      if (is.matrix(x[[i]]))
+	next
+      if (is.list(x[[i]]) && length(x[[i]]) == 1) 
+	x[[i]] = x[[i]][[1]]
+      name = names(x)[i]
+      subnames = names(x[[i]])
+      x[[i]] = combine_subterms_recursive(x[[i]])
+    }
   } else {
-    return(submatrix_joint)
+    stop("Dropped case.")
   }
+  return(combine_subterms_recursive(x))
 }
 
 
@@ -667,15 +654,10 @@ combine_subterms_recursive = function(x) {
 combine_subterms = function(x) {
   for (i in seq_along(x)) {
     x[[i]] = combine_subterms_recursive(x[[i]])
+    if (!is_matrix(x[[i]]))
+      warning("Not succesfully combined.")
   }
-  if (any(sapply(x, length) > 1))
-    warning("Not succesfully combined.")
-  o = list()
-  for (i in seq_along(x)) {
-    o[[names(x[[i]])]] = x[[i]][[1]]
-    print(names(x[[i]]))
-  }
-  return(o)
+  return(x)
 }
 
 #' Combine model term sub-matrices

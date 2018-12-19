@@ -49,7 +49,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .data = "environment"
   ),
   methods = list(
-    initialize = function(formula, data, ...) {
+    initialize = function(formula, data, N = nrow(data), ...) {
       "Create the implicit mass matrix and store components."
       .self$.specifiers = list(
 	original = formula,
@@ -60,6 +60,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.specifiers[['term_list']] = term_list(.self$.specifiers$term) 
 
       .self$.data = as.environment(data)
+      .self$.data$N = N
       .self$.components = imbue(.self$.specifiers$term_list$rhs, .self$.data)
 
       .self$.blocks = list(subterm = expand(.self$.components))
