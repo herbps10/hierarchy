@@ -43,9 +43,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .re_names = "character",
     .n_re = "numeric",
     .n_re_effects = "numeric",
-    .re_start = "numeric",
-    .re_stop = "numeric",
-    .re_idx = "numeric",
+    .re_start = "array",
+    .re_stop = "array",
     .data = "environment"
   ),
   methods = list(
@@ -105,8 +104,8 @@ fmm_factory = methods::setRefClass(Class = "fmm",
 	FUN = function(x) has_(x, 'random')))
       .self$.re_names = .self$.term_names[.self$.random_terms]
       .self$.n_re = length(.self$.random_terms)
-      .self$.re_start = .self$.term_start[.self$.random_terms]
-      .self$.re_stop = .self$.term_stop[.self$.random_terms]
+      .self$.re_start = array(.self$.term_start[.self$.random_terms])
+      .self$.re_stop = array(.self$.term_stop[.self$.random_terms])
     },
     expose = function(...) {
       "Extractor that takes a named vector and provides the relevant
