@@ -23,6 +23,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .n_col = "numeric",
     .n_nze = "numeric",
     .nze = "numeric",
+    .skips = "numeric",
     .start = "numeric",
     .stop = "numeric",
     .xv = "numeric",
@@ -66,13 +67,13 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.blocks[['term']] = combine_subterms(.self$.blocks$subterm)
       .self$.model = list(
         matrix = combine_terms(.self$.blocks$term),
-	list = m_as_list(combine_terms(.self$.blocks$term))
+	      list = m_as_list(combine_terms(.self$.blocks$term))
       )
-
       .self$.n_row = nrow(.model$matrix)
       .self$.n_col = ncol(.model$matrix)
       .self$.n_nze = .model$list$n_nze
       .self$.nze = .model$list$nze
+      .self$.skips = .model$list$skips
       .self$.start = .model$list$start
       .self$.stop = .model$list$stop
       .self$.xv = .model$list$xv
@@ -169,6 +170,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     }, 
     n_nze = function() .self$.n_nze,
     nze = function() .self$.nze,
+    skips = function() .self$.skips,
     start = function(component = NULL) {
       component = .self$check_component(component)
       return(.self$.start[component])

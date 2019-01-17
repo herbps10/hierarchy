@@ -23,8 +23,11 @@ m_as_list = function(m) {
   }
   N = length(nze)
   stop = sapply(nze, length)
+  skips = which(stop == 0)
   stop = cumsum(stop)
   start = c(1, stop[1:(N-1)] + 1)
+  stop[skips] = 0
+  start[skips] = 0
   nze = unlist(nze)
   xv = apply(m, 1, function(x) x[x != 0])
   if (is.matrix(xv))
@@ -34,7 +37,9 @@ m_as_list = function(m) {
     n_col = ncol(m),
     n_nze = length(nze),
     nze = nze,
-    start = start, stop = stop,
+    skips = skips,
+    start = start, 
+    stop = stop,
     xv = unlist(xv)
   )
   return(m_list_form)
