@@ -40,6 +40,12 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .col_terms = "list",
     .col_names = "character",
     .group_lengths = "list",
+    .state_terms = "numeric",
+    .n_state_terms = "numeric",
+    .constant_terms = "numeric",
+    .n_constant_terms = "numeric",
+    .coefficient_terms = "numeric",
+    .n_coefficient_terms = "numeric",
     .random_terms = "numeric",
     .re_names = "character",
     .n_re = "numeric",
@@ -52,9 +58,9 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     initialize = function(formula, data, N = nrow(data), ...) {
       "Create the implicit mass matrix and store components."
       .self$.specifiers = list(
-	original = formula,
-	simple = simplify(formula),
-	standard = distribute(simplify(formula))
+        original = formula,
+        simple = simplify(formula),
+        standard = distribute(simplify(formula))
       )
       .self$.specifiers[['term']] = subterms(.self$.specifiers$standard)
       .self$.specifiers[['term_list']] = term_list(.self$.specifiers$term) 
@@ -99,10 +105,20 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       #.self$.col_terms = mml$col_terms
       #.self$.col_names = mml$names
       #.self$.group_lengths = mml$group_lengths
+      
+      # effect types
+      term_block_expressions = names(.self$.blocks$term)
+      .self$.state_terms = which(sapply(parse(text = term_block_expressions), has_, 'state'))
+      .self$.n_state_terms = length(.self$.state_terms)
+      .self$.constant_terms = which(sapply(parse(text = term_block_expressions), has_, 'constant'))
+      .self$.n_constant_terms = length(.self$.constant_terms)
+      .self$.coefficient_terms = setdiff(1:.self$.n_col,
+        c(.self$.state_terms, .self$.constant_terms))
+      .self$.n_coefficient_terms = length(.self$.coefficient_terms)
+      .self$.random_terms =  which(sapply(parse(text = term_block_expressions), has_, 'random'))
+      .self$.n_random_terms = length(.self$.random_terms)
 
       # r.e. indexing.
-      .self$.random_terms = which(sapply(X = .self$.specifiers$term_list$rhs, 
-	FUN = function(x) has_(x, 'random')))
       .self$.re_names = .self$.term_names[.self$.random_terms]
       .self$.n_re = length(.self$.random_terms)
       .self$.re_start = array(.self$.term_start[.self$.random_terms])
