@@ -47,6 +47,7 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .coefficient_terms = "numeric",
     .n_coefficient_terms = "numeric",
     .random_terms = "numeric",
+    .n_random_terms = "numeric",
     .re_names = "character",
     .n_re = "numeric",
     .n_re_effects = "numeric",
@@ -208,6 +209,12 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     groups = function(component = NULL) {
       component = .self$check_component(component)
       return(.self$.groups[component])
+    },
+    get_matrix = function(flat=FALSE) {
+      if (flat)
+        return(.sefl$.model$list)
+      else
+        return(.self$.model$matrix)
     }
   )
 )
