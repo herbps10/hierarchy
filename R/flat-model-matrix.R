@@ -40,13 +40,13 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .col_terms = "list",
     .col_names = "character",
     .group_lengths = "list",
-    .state_terms = "numeric",
+    .state_terms = "array",
     .n_state_terms = "numeric",
-    .constant_terms = "numeric",
+    .constant_terms = "array",
     .n_constant_terms = "numeric",
-    .coefficient_terms = "numeric",
+    .coefficient_terms = "array",
     .n_coefficient_terms = "numeric",
-    .random_terms = "numeric",
+    .random_terms = "array",
     .n_random_terms = "numeric",
     .re_names = "character",
     .n_re = "numeric",
@@ -109,14 +109,14 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       
       # effect types
       term_block_expressions = names(.self$.blocks$term)
-      .self$.state_terms = which(sapply(parse(text = term_block_expressions), has_, 'state'))
+      .self$.state_terms = array(which(sapply(parse(text = term_block_expressions), has_, 'state')))
       .self$.n_state_terms = length(.self$.state_terms)
-      .self$.constant_terms = which(sapply(parse(text = term_block_expressions), has_, 'constant'))
+      .self$.constant_terms = array(which(sapply(parse(text = term_block_expressions), has_, 'constant')))
       .self$.n_constant_terms = length(.self$.constant_terms)
-      .self$.coefficient_terms = setdiff(1:.self$.n_col,
-        c(.self$.state_terms, .self$.constant_terms))
+      .self$.coefficient_terms = array(setdiff(1:.self$.n_col,
+        c(.self$.state_terms, .self$.constant_terms)))
       .self$.n_coefficient_terms = length(.self$.coefficient_terms)
-      .self$.random_terms =  which(sapply(parse(text = term_block_expressions), has_, 'random'))
+      .self$.random_terms =  array(which(sapply(parse(text = term_block_expressions), has_, 'random')))
       .self$.n_random_terms = length(.self$.random_terms)
 
       # r.e. indexing.
