@@ -22,17 +22,17 @@ fmm_factory = methods::setRefClass(Class = "fmm",
     .n_row = "numeric",
     .n_col = "numeric",
     .n_nze = "numeric",
-    .nze = "numeric",
-    .skips = "numeric",
-    .start = "numeric",
-    .stop = "numeric",
+    .nze = "array",
+    .skips = "array",
+    .start = "array",
+    .stop = "array",
     .xv = "numeric",
     .y_name = "character",
     .y = "list",
-    .term_width = "numeric",
+    .term_width = "array",
     .n_terms = "numeric",
-    .term_start = "numeric",
-    .term_stop = "numeric",
+    .term_start = "array",
+    .term_stop = "array",
     .term_names = "character",
     .group_columns = "list",
     .group_terms = "list",
@@ -79,10 +79,10 @@ fmm_factory = methods::setRefClass(Class = "fmm",
       .self$.n_row = nrow(.model$matrix)
       .self$.n_col = ncol(.model$matrix)
       .self$.n_nze = .model$list$n_nze
-      .self$.nze = .model$list$nze
-      .self$.skips = .model$list$skips
-      .self$.start = .model$list$start
-      .self$.stop = .model$list$stop
+      .self$.nze = array(.model$list$nze)
+      .self$.skips = array(.model$list$skips)
+      .self$.start = array(.model$list$start)
+      .self$.stop = array(.model$list$stop)
       .self$.xv = .model$list$xv
 
       # Response
@@ -91,10 +91,10 @@ fmm_factory = methods::setRefClass(Class = "fmm",
 					   .self$.data)
 
       # Column grouping
-      .self$.term_width = sapply(.self$.blocks$term, ncol)
+      .self$.term_width = array(sapply(.self$.blocks$term, ncol))
       .self$.n_terms = length(.self$.term_width)
-      .self$.term_stop = cumsum(.self$.term_width)
-      .self$.term_start = c(1, .self$.term_stop[-.self$.n_terms] + 1)
+      .self$.term_stop = array(cumsum(.self$.term_width))
+      .self$.term_start = array(c(1, .self$.term_stop[-.self$.n_terms] + 1))
       .self$.term_names = sapply(.self$.specifiers$term_list[['rhs']], deparse)
 
       # Group to columns    FIXME: need this
