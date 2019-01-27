@@ -575,9 +575,7 @@ column_powerset = function(x) {
     stop("Missing input to 'column powerset'.")
   if (!is.list(x))
     stop("Input to 'column_powerset' must be a list.")
-  if (!isTRUE(all(sapply(x, function(x) {
-    isTRUE(is.matrix(x)) || class(x) == 'dgCMatrix' || class(x) == 'dgeMatrix'
-    }))))
+  if (!isTRUE(all(sapply(x, function(x) {isTRUE(is_matrix(x)) }))))
     stop("Input to 'column_powerset' must be a list of matrices.")
   if (!isTRUE(all(sapply(x, function(x, ref) nrow(x) == ref, ref = nrow(x[[1]])))))
     stop("Inputs to 'column_powerset' must all have the same number of rows.")
@@ -610,7 +608,7 @@ column_powerset = function(x) {
 
   
 is_matrix = function(x) is.matrix(x) || 
-  class(x) %in% c('dgCMatrix', 'dgeMatrix')
+  class(x) %in% c('dgCMatrix', 'dgeMatrix', 'dsyMatrix')
 
 has_matrix = function(x) {
   if (!is.list(x) || length(x) != 1) 
@@ -634,10 +632,10 @@ combine_subterms_recursive = function(x) {
     return(column_powerset(x))
   else if (is.list(x)) { 
     for (i in seq_along(x)) {
-      if (is.matrix(x[[i]]))
-	next
+      if (is_matrix(x[[i]]))
+        next
       if (is.list(x[[i]]) && length(x[[i]]) == 1) 
-	x[[i]] = x[[i]][[1]]
+        x[[i]] = x[[i]][[1]]
       name = names(x)[i]
       subnames = names(x[[i]])
       x[[i]] = combine_subterms_recursive(x[[i]])

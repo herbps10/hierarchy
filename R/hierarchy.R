@@ -84,7 +84,9 @@ hierarchy_factory = methods::setRefClass(Class = "hierarchy",
       idxs_l = lapply(idxs_l, function(x) x[x != 1])
       lengths = sapply(idxs_l, length, USE.NAMES = FALSE)
       N = length(lengths)
-      start = c(1, cumsum(lengths)[1:(N-1)])
+      start = 1
+      if (N > 1)
+        start = c(start, cumsum(lengths)[1:(N-1)])
       stop = (start + lengths - 1)
       return(list(
         idx = unlist(idxs_l),

@@ -25,7 +25,9 @@ m_as_list = function(m) {
   stop = sapply(nze, length)
   skips = which(stop == 0)
   stop = cumsum(stop)
-  start = c(1, stop[1:(N-1)] + 1)
+  start = 1
+  if (length(stop) > 1)
+    start = c(start, stop[1:(N-1)] + 1)
   stop[skips] = 0
   start[skips] = 0
   nze = unlist(nze)
