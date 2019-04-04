@@ -501,7 +501,9 @@ imbue = function(terms, data, methods = hierarchy:::default_imbue_methods()) {
   for (name in names(methods)) 
     assign(x = name, value = methods[[name]], pos = e)
   o = list()
-  terms <- ifelse(is.list(terms), terms, list(terms))
+  if(!is.list(terms)) {
+    terms <- list(terms)
+  }
   for (t in terms) {
     term_name = deparse(t, width.cutoff = 200L)
     o[[length(o) + 1]] = eval(t, envir = e)
